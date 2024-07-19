@@ -8,12 +8,18 @@ from wazuh.core.exception import WazuhException, WazuhError, WazuhResourceNotFou
 from wazuh.core.wazuh_queue import WazuhQueue
 from wazuh.core.results import AffectedItemsWazuhResult
 from wazuh.rbac.decorators import expose_resources
+from wazuh.core.custom_logger import custom_logger
 
 
 @expose_resources(actions=['active-response:command'], resources=['agent:id:{agent_list}'],
                   post_proc_kwargs={'exclude_codes': [1701, 1703]})
 def run_command(agent_list: list = None, command: str = '', arguments: list = None, custom: bool = False,
                 alert: dict = None) -> AffectedItemsWazuhResult:
+    
+    # logger
+    custom_logger(f"run_command (active_response wazuh)")
+    custom_logger(f"agent_list : {agent_list}, command : {command}, argumnets : {arguments}, custon : {custom}")
+    
     """Run AR command in a specific agent.
 
     Parameters
@@ -55,4 +61,7 @@ def run_command(agent_list: list = None, command: str = '', arguments: list = No
                     result.add_failed_item(id_=agent_id, error=e)
             result.affected_items.sort(key=int)
 
+    # logger
+    custom_logger(f"run_command (active_response wazuh) return result : {result}")
+    
     return result

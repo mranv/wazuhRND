@@ -11,9 +11,15 @@ from wazuh.core.exception import WazuhError
 from wazuh.core.utils import WazuhVersion
 from wazuh.core.wazuh_queue import WazuhQueue
 from wazuh.core.wazuh_socket import create_wazuh_socket_message
+from wazuh.core.custom_logger import custom_logger
 
 
 def create_message(command: str = '', custom: bool = False, arguments: list = None) -> str:
+    
+    # logger
+    custom_logger(f"create_message (active_response core)")
+    custom_logger(f"command: {command} , custom : {custom}, aguments : {arguments}")
+    
     """Create the message that will be sent.
 
     Parameters
@@ -48,10 +54,18 @@ def create_message(command: str = '', custom: bool = False, arguments: list = No
     msg_queue = "!{}".format(command) if custom else command
     msg_queue += " " + " ".join(shell_escape(str(x)) for x in arguments) if arguments else " - -"
 
+    # logger
+    custom_logger(f"create_message (active_response core) return msg_queue : {msg_queue}")
+
     return msg_queue
 
 
 def create_json_message(command: str = '', arguments: list = None, alert: dict = None) -> str:
+    
+    # logger
+    custom_logger(f"create_json_message (active_response core)")
+    custom_logger(f"command : {command}, argynebt : {arguments}, alert : {alert}")
+    
     """Create the JSON message that will be sent. Function used when Wazuh agent version is >= 4.2.0.
 
     Parameters
@@ -85,12 +99,18 @@ def create_json_message(command: str = '', arguments: list = None, alert: dict =
                                     command=command,
                                     parameters={'extra_args': arguments if arguments else [],
                                                 'alert': alert if alert else {}}))
-
+    # logger
+    custom_logger(f"create_json_message (active_response core) return msg_queue : {msg_queue}")
+    
     return msg_queue
 
 
 def send_ar_message(agent_id: str = '', wq: WazuhQueue = None, command: str = '', arguments: list = None,
                     custom: bool = False, alert: dict = None) -> None:
+    
+    # logger
+    custom_logger(f"send_ar_message (active_response core)")
+    
     """Send the active response message to the agent.
 
     Parameters
@@ -136,11 +156,18 @@ def send_ar_message(agent_id: str = '', wq: WazuhQueue = None, command: str = ''
         msg_queue = create_json_message(command=command, arguments=arguments, alert=alert)
     else:
         msg_queue = create_message(command=command, arguments=arguments, custom=custom)
+    
+    # logger
+    custom_logger(f"send_ar_message (active_response core) -- send the msg to wq (wazuh_queue) send_msg_to_agent ")
 
     wq.send_msg_to_agent(msg=msg_queue, agent_id=agent_id, msg_type=WazuhQueue.AR_TYPE)
 
 
 def get_commands() -> list:
+    
+    # logger
+    custom_logger(f"get_commands (active_response core)")
+    
     """Get the available commands.
 
     Returns
@@ -153,11 +180,17 @@ def get_commands() -> list:
         for line in f:
             cmd = line.split(" - ")[0]
             commands.append(cmd)
-
+    # logger
+    custom_logger(f"get_commands (active_response core) - commands: {commands}")
+    
     return commands
 
 
 def shell_escape(command: str = '') -> str:
+    
+    # logger
+    custom_logger(f"shell_escape (active_response core)")
+    custom_logger(f"command : {command}")
     """Escape some characters in the command before sending it.
 
     Parameters
@@ -176,4 +209,7 @@ def shell_escape(command: str = '') -> str:
     for shell_esc_char in shell_escapes:
         command = command.replace(shell_esc_char, "\\" + shell_esc_char)
 
+    # logger
+    custom_logger(f"shell_escape (active_response core) - command: {command}")
+    
     return command

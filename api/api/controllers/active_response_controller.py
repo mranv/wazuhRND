@@ -12,12 +12,18 @@ from api.models.active_response_model import ActiveResponseModel
 from api.models.base_model_ import Body
 from api.util import remove_nones_to_dict, raise_if_exc
 from wazuh.core.cluster.dapi.dapi import DistributedAPI
+from wazuh.core.custom_logger import custom_logger
 
 logger = logging.getLogger('wazuh-api')
 
 
 async def run_command(request, agents_list: str = '*', pretty: bool = False,
                       wait_for_complete: bool = False) -> web.Response:
+    
+    # logger
+    custom_logger(f"run_command (activ_responce_controller)")
+    custom_logger(f"agnet_list : {agents_list}")
+    
     """Runs an Active Response command on a specified list of agents.
 
     Parameters
@@ -49,4 +55,7 @@ async def run_command(request, agents_list: str = '*', pretty: bool = False,
                           )
     data = raise_if_exc(await dapi.distribute_function())
 
+    # logger
+    custom_logger(f"run_command (activ_responce_controller) return web-response {web.json_response(data=data, status=200, dumps=prettify if pretty else dumps)}")
+    
     return web.json_response(data=data, status=200, dumps=prettify if pretty else dumps)
