@@ -383,8 +383,9 @@ int OS_ConnectUDP(u_int16_t _port, const char *_ip, int ipv6, uint32_t network_i
 /* Send a TCP packet (through an open socket) */
 int OS_SendTCP(int socket, const char *msg)
 {
-    log_function("OS_SendTCP", "socket: %d, msg length: %zu", socket, strlen(msg));
-    if ((send(socket, msg, strlen(msg), 0)) <= 0) {
+    size_t msg_length = strlen(msg);
+    log_function("OS_SendTCP", "socket: %d, msg length: %zu", socket, msg_length);
+    if ((send(socket, msg, msg_length, 0)) <= 0) {
         return (OS_SOCKTERR);
     }
 
@@ -394,7 +395,7 @@ int OS_SendTCP(int socket, const char *msg)
 /* Send a TCP packet of a specific size (through a open socket) */
 int OS_SendTCPbySize(int socket, int size, const char *msg)
 {
-    log_function("OS_SendTCPbySize", NULL);
+    log_function("OS_SendTCPbySize", "socket: %d, msg length: %d", socket, size);
     if ((send(socket, msg, size, 0)) < size) {
         return (OS_SOCKTERR);
     }
@@ -405,10 +406,9 @@ int OS_SendTCPbySize(int socket, int size, const char *msg)
 /* Send a UDP packet of a specific size (through an open socket) */
 int OS_SendUDPbySize(int socket, int size, const char *msg)
 {
-    log_function("OS_SendUDPbySize", NULL);
+    log_function("OS_SendUDPbySize", "socket: %d, msg length: %d", socket, size);
     unsigned int i = 0;
 
-    /* Maximum attempts is 5 */
     while ((send(socket, msg, size, 0)) < 0) {
         if ((errno != ENOBUFS) || (i >= 5)) {
             return (OS_SOCKTERR);
@@ -549,10 +549,11 @@ int OS_RecvUnix(int socket, int sizet, char *ret)
  */
 int OS_SendUnix(int socket, const char *msg, int size)
 {
-    log_function("OS_SendUnix", NULL);
     if (size == 0) {
         size = strlen(msg) + 1;
     }
+
+    log_function("OS_SendUnix", "socket: %d, msg length: %d", socket, size);
 
     if (send(socket, msg, size, 0) < size) {
         if (errno == ENOBUFS) {
@@ -707,7 +708,7 @@ int OS_SetSendTimeout(int socket, int seconds)
 // Send secure TCP message
 
 int OS_SendSecureTCP(int sock, uint32_t size, const void * msg) {
-    log_function("OS_SendSecureTCP", NULL);
+    log_function("OS_SendSecureTCP", "socket: %d, msg length: %u", sock, size);
     int retval = OS_SOCKTERR;
     void* buffer = NULL;
     size_t bufsz = size + sizeof(uint32_t);
@@ -831,7 +832,7 @@ int OS_SetSocketSize(int sock, int mode, int max_msg_size) {
 
 /* Send secure TCP Cluster message */
 int OS_SendSecureTCPCluster(int sock, const void * command, const void * payload, size_t length) {
-    log_function("OS_SendSecureTCPCluster", NULL);
+    log_function("OS_SendSecureTCPCluster", "socket: %d, command length: %zu, payload length: %zu", sock, strlen(command), length);
     const unsigned COMMAND_SIZE = 12;
     const unsigned HEADER_SIZE =  8;
     const unsigned MAX_PAYLOAD_SIZE = 1000000;
@@ -858,7 +859,6 @@ int OS_SendSecureTCPCluster(int sock, const void * command, const void * payload
         return -1;
     }
 
-    // Cluster message: [counter:4][length:4][command:12][payload]
     buffer_size = HEADER_SIZE + COMMAND_SIZE + length;
     os_malloc(buffer_size, buffer);
     *(uint32_t *)buffer = wnet_order_big(counter);
