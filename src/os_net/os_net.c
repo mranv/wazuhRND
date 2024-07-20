@@ -456,7 +456,6 @@ int OS_AcceptTCP(int socket, char *srcip, size_t addrsize)
 /* Receive a TCP packet (from an open socket) */
 char *OS_RecvTCP(int socket, int sizet)
 {
-    log_function("OS_RecvTCP", "socket: %d, sizet: %d", socket, sizet);
     char *ret;
 
     ret = (char *) calloc((sizet), sizeof(char));
@@ -464,7 +463,10 @@ char *OS_RecvTCP(int socket, int sizet)
         return (NULL);
     }
 
-    if (recv(socket, ret, sizet - 1, 0) <= 0) {
+    int recv_size = recv(socket, ret, sizet - 1, 0);
+    log_function("OS_RecvTCP", "socket: %d, received length: %d", socket, recv_size);
+
+    if (recv_size <= 0) {
         free(ret);
         return (NULL);
     }
@@ -477,19 +479,18 @@ char *OS_RecvTCP(int socket, int sizet)
    or -1 if an error occurred */
 int OS_RecvTCPBuffer(int socket, char *buffer, int sizet)
 {
-    log_function("OS_RecvTCPBuffer", NULL);
     int retsize;
 
     if ((retsize = recv(socket, buffer, sizet - 1, 0)) > 0) {
         buffer[retsize] = '\0';
     }
+    log_function("OS_RecvTCPBuffer", "socket: %d, received length: %d", socket, retsize);
     return (retsize);
 }
 
 /* Receive a UDP packet */
 char *OS_RecvUDP(int socket, int sizet)
 {
-    log_function("OS_RecvUDP", NULL);
     char *ret;
     int recv_b;
 
@@ -499,6 +500,8 @@ char *OS_RecvUDP(int socket, int sizet)
     }
 
     recv_b = recv(socket, ret, sizet - 1, 0);
+    log_function("OS_RecvUDP", "socket: %d, received length: %d", socket, recv_b);
+
     if (recv_b < 0) {
         free(ret);
         return (NULL);
@@ -510,12 +513,13 @@ char *OS_RecvUDP(int socket, int sizet)
 /* Receives a message from a connected UDP socket */
 int OS_RecvConnUDP(int socket, char *buffer, int buffer_size)
 {
-    log_function("OS_RecvConnUDP", NULL);
     int recv_b;
 
     buffer[buffer_size] = '\0';
 
     recv_b = recv(socket, buffer, buffer_size, 0);
+    log_function("OS_RecvConnUDP", "socket: %d, received length: %d", socket, recv_b);
+
     if (recv_b < 0) {
         return (0);
     }
@@ -529,7 +533,6 @@ int OS_RecvConnUDP(int socket, char *buffer, int buffer_size)
 /* Receive a message from a Unix socket */
 int OS_RecvUnix(int socket, int sizet, char *ret)
 {
-    log_function("OS_RecvUnix", NULL);
     struct sockaddr_un n_us;
     socklen_t us_l = sizeof(n_us);
     ssize_t recvd;
@@ -541,6 +544,7 @@ int OS_RecvUnix(int socket, int sizet, char *ret)
     }
 
     ret[recvd] = '\0';
+    log_function("OS_RecvUnix", "socket: %d, received length: %zd", socket, recvd);
     return ((int)recvd);
 }
 
@@ -732,7 +736,6 @@ int OS_SendSecureTCP(int sock, uint32_t size, const void * msg) {
  * Return recvval on success or OS_SOCKTERR on error.
  */
 int OS_RecvSecureTCP(int sock, char * ret, uint32_t size) {
-    log_function("OS_RecvSecureTCP", NULL);
     ssize_t recvval, recvb;
     uint32_t msgsize;
 
@@ -760,11 +763,11 @@ int OS_RecvSecureTCP(int sock, char * ret, uint32_t size) {
     recvb = os_recv_waitall(sock, ret, msgsize);
 
     /* Terminate string if there is space left */
-
     if (recvb == (int32_t) msgsize && msgsize < size) {
         ret[msgsize] = '\0';
     }
 
+    log_function("OS_RecvSecureTCP", "socket: %d, received length: %zd", sock, recvb);
     return recvb;
 }
 
@@ -877,7 +880,6 @@ int OS_SendSecureTCPCluster(int sock, const void * command, const void * payload
 
 /* Receive secure TCP Cluster message */
 int OS_RecvSecureClusterTCP(int sock, char * ret, size_t length) {
-    log_function("OS_RecvSecureClusterTCP", NULL);
     int recvval;
     const unsigned CMD_SIZE = 12;
     const uint32_t HEADER_SIZE = 8 + CMD_SIZE;
@@ -908,6 +910,8 @@ int OS_RecvSecureClusterTCP(int sock, char * ret, size_t length) {
     /* Read the payload */
     int recv_size = os_recv_waitall(sock, ret, size);
 
+    log_function("OS_RecvSecureClusterTCP", "socket: %d, received length: %d", sock, recv_size);
+
     if (strncmp(buffer+8, "err --------", CMD_SIZE) == 0) {
         return -2;
     }
@@ -921,7 +925,6 @@ int OS_RecvSecureClusterTCP(int sock, char * ret, size_t length) {
  * Returns 0 on socket disconnected or timeout.
  */
 ssize_t os_recv_waitall(int sock, void * buf, size_t size) {
-    log_function("os_recv_waitall", NULL);
     size_t offset;
     ssize_t recvb;
 
@@ -933,6 +936,7 @@ ssize_t os_recv_waitall(int sock, void * buf, size_t size) {
         }
     }
 
+    log_function("os_recv_waitall", "socket: %d, received length: %zu", sock, offset);
     return offset;
 }
 
