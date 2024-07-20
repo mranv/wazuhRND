@@ -9,9 +9,15 @@ from typing import Any
 from wazuh.core.common import origin_module
 from wazuh.core.exception import WazuhError, WazuhInternalError
 from wazuh.core.wazuh_socket import create_wazuh_socket_message
+from wazuh.core.custom_logger import custom_logger
 
 
 def create_wazuh_queue_socket_msg(flag: str, str_agent_id: str, msg: str, is_restart: bool = False) -> str:
+    
+    # logger
+    custom_logger(f"create_wazuh_queue_socket_msg (wazuh_queue)")
+    custom_logger(f"flag : {flag}, str_agent_id : {str_agent_id}, msg : {msg}, is_restart : {is_restart}")
+    
     """Create message that will be sent to the WazuhQueue socket.
 
     Parameters
@@ -31,6 +37,12 @@ def create_wazuh_queue_socket_msg(flag: str, str_agent_id: str, msg: str, is_res
     str
         Message that will be sent to the WazuhQueue socket.
     """
+    
+    # logger
+    ret_msg = f"(msg_to_agent) [] {flag} {str_agent_id} {msg}" if not is_restart else \
+        f"(msg_to_agent) [] {flag} {str_agent_id} {msg} - null (from_the_server) (no_rule_id)"
+    custom_logger(f"create_wazuh_queue_socket_msg (wazuh_queue) return : {ret_msg} ")
+    
     return f"(msg_to_agent) [] {flag} {str_agent_id} {msg}" if not is_restart else \
         f"(msg_to_agent) [] {flag} {str_agent_id} {msg} - null (from_the_server) (no_rule_id)"
 
@@ -103,6 +115,11 @@ class WazuhQueue(BaseQueue):
     AR_TYPE = "ar-message"
 
     def send_msg_to_agent(self, msg: str = '', agent_id: str = '', msg_type: str = '') -> str:
+        
+        # logger
+        custom_logger(f"send_msg_to_agent (wazuh_queue)")
+        custom_logger(f"msg : {msg}, agent_id : {agent_id}, msg_type : {msg_type}")
+        
         """Send message to agent.
 
         Active-response
@@ -180,6 +197,9 @@ class WazuhQueue(BaseQueue):
         except:
             raise WazuhError(1014, extra_message=f": WazuhQueue socket with path {self.path}")
 
+        # logger
+        custom_logger(f"send_msg_to_agent (wazuh_queue) return ret_msg : {ret_msg}")
+        
         return ret_msg
 
 
