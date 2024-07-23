@@ -57,6 +57,7 @@ class BaseQueue:
         self._connect()
 
     def _connect(self):
+        custom_logger("_connect (wazuh_queue class Base Queue)")
         try:
             self.socket = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
             self.socket.connect(self.path)
@@ -70,6 +71,10 @@ class BaseQueue:
         return self
 
     def _send(self, msg: bytes) -> None:
+        
+        # logger
+        custom_logger(f"_send (WazuhQueue) class Base Queue")
+        
         """Send a message through a socket.
 
         Parameters
@@ -91,6 +96,10 @@ class BaseQueue:
             raise WazuhInternalError(1011, self.path)
 
     def close(self):
+        
+        # logger
+        custom_logger(f"close (wazuh Queue) class BaseQueue")
+        
         self.socket.close()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
