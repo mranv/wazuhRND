@@ -72,7 +72,7 @@ def create_json_message(command: str = '', arguments: list = None, alert: dict =
     
     # logger
     custom_logger(f"create_json_message (active_response core)")
-    custom_logger(f"command : {command}, argynebt : {arguments}, alert : {alert}")
+    custom_logger(f"command : {command}, arguments : {arguments}, alert : {alert}")
     
     """Create the JSON message that will be sent. Function used when Wazuh agent version is >= 4.2.0.
 
@@ -106,7 +106,7 @@ def create_json_message(command: str = '', arguments: list = None, alert: dict =
     cluster_enabled = not read_cluster_config()['disabled']
     
     # logger
-    custom_logger(f"cluster endbled or not ; {cluster_enabled}")
+    custom_logger(f"cluster endbled or not : {cluster_enabled}")
     
     node_name = get_node().get('node') if cluster_enabled else None
 
@@ -158,24 +158,49 @@ def send_ar_message(agent_id: str = '', wq: WazuhQueue = None, command: str = ''
     """
     # Agent basic information
     agent_info = Agent(agent_id).get_basic_information()
+    
+    # logger
+    custom_logger(f"send_ar_message (active responce core) anget Info : {agent_info}")
 
     # Check if agent is active
+    
+    # logger
+    custom_logger(f"anget status : {agent_info['status'].lower()}")
     if agent_info['status'].lower() != 'active':
+        
+        custom_logger("if agent is not active : {WazuhError(1707)}")
         raise WazuhError(1707)
 
     # Once we know the agent is active, store version
     agent_version = agent_info['version']
 
+    # logger
+    custom_logger(f"send_ar_message (active responce core) agent version : {agent_version}")
+    
     # Check if AR is enabled
     agent_conf = Agent(agent_id).get_config('com', 'active-response', agent_version)
+    
+    
+    
     if agent_conf['active-response']['disabled'] == 'yes':
+        
+        # logger
+        custom_logger(f"if active response is disabled : {WazuhError(1750)}")
+        
         raise WazuhError(1750)
 
     # Create classic msg or JSON msg depending on the agent version
     if WazuhVersion(agent_version) >= WazuhVersion(common.AR_LEGACY_VERSION):
         msg_queue = create_json_message(command=command, arguments=arguments, alert=alert)
+        
+        # logger
+        custom_logger(f"json msg : {msg_queue}")
+         
     else:
         msg_queue = create_message(command=command, arguments=arguments, custom=custom)
+        
+        # logger
+        custom_logger(f"classic msg : {msg_queue}")
     
     # logger
     custom_logger(f"send_ar_message (active_response core) -- send the msg to wq (wazuh_queue) send_msg_to_agent msg_queue : {msg_queue}")
