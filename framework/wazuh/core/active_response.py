@@ -45,10 +45,18 @@ def create_message(command: str = '', custom: bool = False, arguments: list = No
         Message that will be sent to the socket.
     """
     if not command:
+        
+        # logger
+        custom_logger(f"is not command : {WazuhError(1650)}")
+        
         raise WazuhError(1650)
 
     commands = get_commands()
     if not custom and command not in commands:
+        
+        # logger
+        custom_logger(f"command is not custom and command is not one of the available commands : {WazuhError(1652)}")
+        
         raise WazuhError(1652)
 
     msg_queue = "!{}".format(command) if custom else command
@@ -89,11 +97,22 @@ def create_json_message(command: str = '', arguments: list = None, alert: dict =
         Message that will be sent to the socket.
     """
     if not command:
+        
+        # logger
+        custom_logger(f"if not commmand : {WazuhError(1650)}")
+        
         raise WazuhError(1650)
 
     cluster_enabled = not read_cluster_config()['disabled']
+    
+    # logger
+    custom_logger(f"cluster endbled or not ; {cluster_enabled}")
+    
     node_name = get_node().get('node') if cluster_enabled else None
 
+    # logger
+    custom_logger(f"node_name : {node_name}")
+    
     msg_queue = json.dumps(
         create_wazuh_socket_message(origin={'name': node_name, 'module': common.origin_module.get()},
                                     command=command,
@@ -110,6 +129,7 @@ def send_ar_message(agent_id: str = '', wq: WazuhQueue = None, command: str = ''
     
     # logger
     custom_logger(f"send_ar_message (active_response core)")
+    custom_logger(f"agent_id : {agent_id}, wq : {wq}, command : {command}, argments : {arguments}, custom : {custom}, alert : {alert}")
     
     """Send the active response message to the agent.
 
@@ -158,7 +178,7 @@ def send_ar_message(agent_id: str = '', wq: WazuhQueue = None, command: str = ''
         msg_queue = create_message(command=command, arguments=arguments, custom=custom)
     
     # logger
-    custom_logger(f"send_ar_message (active_response core) -- send the msg to wq (wazuh_queue) send_msg_to_agent ")
+    custom_logger(f"send_ar_message (active_response core) -- send the msg to wq (wazuh_queue) send_msg_to_agent msg_queue : {msg_queue}")
 
     wq.send_msg_to_agent(msg=msg_queue, agent_id=agent_id, msg_type=WazuhQueue.AR_TYPE)
 

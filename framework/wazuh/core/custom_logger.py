@@ -9,4 +9,3 @@ def custom_logger(message):
     
     with open(log_file_path, 'a') as file:
         file.write(str(log_entry))
-        
