@@ -359,8 +359,9 @@ static int OS_Connect(u_int16_t _port, unsigned int protocol, const char *_ip, i
 /* Open a TCP socket */
 int OS_ConnectTCP(u_int16_t _port, const char *_ip, int ipv6, uint32_t network_interface)
 {
-    log_function("OS_ConnectTCP", NULL);
-    return (OS_Connect(_port, IPPROTO_TCP, _ip, ipv6, network_interface));
+    int result = OS_Connect(_port, IPPROTO_TCP, _ip, ipv6, network_interface);
+    log_function("OS_ConnectTCP", "Result: %d", result);
+    return result;
 }
 
 /* Open a UDP socket */
@@ -383,8 +384,9 @@ int OS_ConnectUDP(u_int16_t _port, const char *_ip, int ipv6, uint32_t network_i
 /* Send a TCP packet (through an open socket) */
 int OS_SendTCP(int socket, const char *msg)
 {
-    log_function("OS_SendTCP", "socket: %d, msg length: %zu", socket, strlen(msg));
-    if ((send(socket, msg, strlen(msg), 0)) <= 0) {
+    size_t msg_length = strlen(msg);
+    log_function("OS_SendTCP", "socket: %d, msg length: %zu", socket, msg_length);
+    if ((send(socket, msg, msg_length, 0)) <= 0) {
         return (OS_SOCKTERR);
     }
 
@@ -394,7 +396,7 @@ int OS_SendTCP(int socket, const char *msg)
 /* Send a TCP packet of a specific size (through a open socket) */
 int OS_SendTCPbySize(int socket, int size, const char *msg)
 {
-    log_function("OS_SendTCPbySize", NULL);
+    log_function("OS_SendTCPbySize", "socket: %d, msg length: %d", socket, size);
     if ((send(socket, msg, size, 0)) < size) {
         return (OS_SOCKTERR);
     }
@@ -405,10 +407,9 @@ int OS_SendTCPbySize(int socket, int size, const char *msg)
 /* Send a UDP packet of a specific size (through an open socket) */
 int OS_SendUDPbySize(int socket, int size, const char *msg)
 {
-    log_function("OS_SendUDPbySize", NULL);
+    log_function("OS_SendUDPbySize", "socket: %d, msg length: %d", socket, size);
     unsigned int i = 0;
 
-    /* Maximum attempts is 5 */
     while ((send(socket, msg, size, 0)) < 0) {
         if ((errno != ENOBUFS) || (i >= 5)) {
             return (OS_SOCKTERR);
@@ -456,20 +457,25 @@ int OS_AcceptTCP(int socket, char *srcip, size_t addrsize)
 /* Receive a TCP packet (from an open socket) */
 char *OS_RecvTCP(int socket, int sizet)
 {
-    log_function("OS_RecvTCP", "socket: %d, sizet: %d", socket, sizet);
     char *ret;
 
     ret = (char *) calloc((sizet), sizeof(char));
     if (ret == NULL) {
-        return (NULL);
+        log_function("OS_RecvTCP", "Result: NULL (memory allocation failed)");
+        return NULL;
     }
 
-    if (recv(socket, ret, sizet - 1, 0) <= 0) {
+    int recv_size = recv(socket, ret, sizet - 1, 0);
+    log_function("OS_RecvTCP", "socket: %d, received length: %d", socket, recv_size);
+
+    if (recv_size <= 0) {
         free(ret);
-        return (NULL);
+        log_function("OS_RecvTCP", "Result: NULL (recv failed or connection closed)");
+        return NULL;
     }
 
-    return (ret);
+    log_function("OS_RecvTCP", "Result: Success, received %d bytes", recv_size);
+    return ret;
 }
 
 /* Receive a TCP packet (from an open socket)
@@ -477,19 +483,18 @@ char *OS_RecvTCP(int socket, int sizet)
    or -1 if an error occurred */
 int OS_RecvTCPBuffer(int socket, char *buffer, int sizet)
 {
-    log_function("OS_RecvTCPBuffer", NULL);
     int retsize;
 
     if ((retsize = recv(socket, buffer, sizet - 1, 0)) > 0) {
         buffer[retsize] = '\0';
     }
+    log_function("OS_RecvTCPBuffer", "socket: %d, received length: %d", socket, retsize);
     return (retsize);
 }
 
 /* Receive a UDP packet */
 char *OS_RecvUDP(int socket, int sizet)
 {
-    log_function("OS_RecvUDP", NULL);
     char *ret;
     int recv_b;
 
@@ -499,6 +504,8 @@ char *OS_RecvUDP(int socket, int sizet)
     }
 
     recv_b = recv(socket, ret, sizet - 1, 0);
+    log_function("OS_RecvUDP", "socket: %d, received length: %d", socket, recv_b);
+
     if (recv_b < 0) {
         free(ret);
         return (NULL);
@@ -510,12 +517,13 @@ char *OS_RecvUDP(int socket, int sizet)
 /* Receives a message from a connected UDP socket */
 int OS_RecvConnUDP(int socket, char *buffer, int buffer_size)
 {
-    log_function("OS_RecvConnUDP", NULL);
     int recv_b;
 
     buffer[buffer_size] = '\0';
 
     recv_b = recv(socket, buffer, buffer_size, 0);
+    log_function("OS_RecvConnUDP", "socket: %d, received length: %d", socket, recv_b);
+
     if (recv_b < 0) {
         return (0);
     }
@@ -529,7 +537,6 @@ int OS_RecvConnUDP(int socket, char *buffer, int buffer_size)
 /* Receive a message from a Unix socket */
 int OS_RecvUnix(int socket, int sizet, char *ret)
 {
-    log_function("OS_RecvUnix", NULL);
     struct sockaddr_un n_us;
     socklen_t us_l = sizeof(n_us);
     ssize_t recvd;
@@ -541,6 +548,7 @@ int OS_RecvUnix(int socket, int sizet, char *ret)
     }
 
     ret[recvd] = '\0';
+    log_function("OS_RecvUnix", "socket: %d, received length: %zd", socket, recvd);
     return ((int)recvd);
 }
 
@@ -549,12 +557,20 @@ int OS_RecvUnix(int socket, int sizet, char *ret)
  */
 int OS_SendUnix(int socket, const char *msg, int size)
 {
-    log_function("OS_SendUnix", NULL);
+    // Set correct size if not present.
     if (size == 0) {
         size = strlen(msg) + 1;
     }
 
-    if (send(socket, msg, size, 0) < size) {
+    log_function("OS_SendUnix", "socket: %d, msg length: %d", socket, size);
+
+    int sentBytes = send(socket, msg, size, 0); 
+
+    log_function("OS_SendUnix", "socket: %d, msg length: %d, sent bytes: %d, errno: %d", socket, size, sentBytes, errno);
+
+    // Check sent bytes with size to be sent
+    if (sentBytes < size) {
+
         if (errno == ENOBUFS) {
             return (OS_SOCKBUSY);
         }
@@ -564,6 +580,7 @@ int OS_SendUnix(int socket, const char *msg, int size)
 
     return (OS_SUCCESS);
 }
+
 #endif
 
 /*
@@ -707,12 +724,13 @@ int OS_SetSendTimeout(int socket, int seconds)
 // Send secure TCP message
 
 int OS_SendSecureTCP(int sock, uint32_t size, const void * msg) {
-    log_function("OS_SendSecureTCP", NULL);
+    log_function("OS_SendSecureTCP", "socket: %d, msg length: %u", sock, size);
     int retval = OS_SOCKTERR;
     void* buffer = NULL;
     size_t bufsz = size + sizeof(uint32_t);
 
     if (sock < 0) {
+        log_function("OS_SendSecureTCP", "Result: %d (Invalid socket)", retval);
         return retval;
     }
 
@@ -721,6 +739,13 @@ int OS_SendSecureTCP(int sock, uint32_t size, const void * msg) {
     memcpy(buffer + sizeof(uint32_t), msg, size);
     errno = 0;
     retval = send(sock, buffer, bufsz, 0) == (ssize_t)bufsz ? 0 : OS_SOCKTERR;
+    
+    if (retval == OS_SOCKTERR) {
+        log_function("OS_SendSecureTCP", "Result: %d (Send failed, errno: %d)", retval, errno);
+    } else {
+        log_function("OS_SendSecureTCP", "Result: %d (Success)", retval);
+    }
+    
     free(buffer);
     return retval;
 }
@@ -731,7 +756,6 @@ int OS_SendSecureTCP(int sock, uint32_t size, const void * msg) {
  * Return recvval on success or OS_SOCKTERR on error.
  */
 int OS_RecvSecureTCP(int sock, char * ret, uint32_t size) {
-    log_function("OS_RecvSecureTCP", NULL);
     ssize_t recvval, recvb;
     uint32_t msgsize;
 
@@ -759,11 +783,11 @@ int OS_RecvSecureTCP(int sock, char * ret, uint32_t size) {
     recvb = os_recv_waitall(sock, ret, msgsize);
 
     /* Terminate string if there is space left */
-
     if (recvb == (int32_t) msgsize && msgsize < size) {
         ret[msgsize] = '\0';
     }
 
+    log_function("OS_RecvSecureTCP", "socket: %d, received length: %zd", sock, recvb);
     return recvb;
 }
 
@@ -795,7 +819,6 @@ int OS_SetSocketSize(int sock, int mode, int max_msg_size) {
     socklen_t optlen = sizeof(len);
 
     if (mode == RECV_SOCK) {
-
         /* Get current maximum size */
         if (getsockopt(sock, SOL_SOCKET, SO_RCVBUF, (void *)&len, &optlen) == -1) {
             len = 0;
@@ -805,12 +828,12 @@ int OS_SetSocketSize(int sock, int mode, int max_msg_size) {
         if (len < max_msg_size) {
             len = max_msg_size;
             if (setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (const void *)&len, optlen) < 0) {
+                log_function("OS_SetSocketSize", "Result: -1 (setsockopt failed for RECV_SOCK)");
                 return -1;
             }
         }
 
     } else if (mode == SEND_SOCK) {
-
         /* Get current maximum size */
         if (getsockopt(sock, SOL_SOCKET, SO_SNDBUF, (void *)&len, &optlen) == -1) {
             len = 0;
@@ -820,18 +843,20 @@ int OS_SetSocketSize(int sock, int mode, int max_msg_size) {
         if (len < max_msg_size) {
             len = max_msg_size;
             if (setsockopt(sock, SOL_SOCKET, SO_SNDBUF, (const void *)&len, optlen) < 0) {
+                log_function("OS_SetSocketSize", "Result: -1 (setsockopt failed for SEND_SOCK)");
                 return -1;
             }
         }
     }
 
+    log_function("OS_SetSocketSize", "Result: 0 (Success)");
     return 0;
 }
 
 
 /* Send secure TCP Cluster message */
 int OS_SendSecureTCPCluster(int sock, const void * command, const void * payload, size_t length) {
-    log_function("OS_SendSecureTCPCluster", NULL);
+    log_function("OS_SendSecureTCPCluster", "socket: %d, command length: %zu, payload length: %zu", sock, strlen(command), length);
     const unsigned COMMAND_SIZE = 12;
     const unsigned HEADER_SIZE =  8;
     const unsigned MAX_PAYLOAD_SIZE = 1000000;
@@ -858,7 +883,6 @@ int OS_SendSecureTCPCluster(int sock, const void * command, const void * payload
         return -1;
     }
 
-    // Cluster message: [counter:4][length:4][command:12][payload]
     buffer_size = HEADER_SIZE + COMMAND_SIZE + length;
     os_malloc(buffer_size, buffer);
     *(uint32_t *)buffer = wnet_order_big(counter);
@@ -877,7 +901,6 @@ int OS_SendSecureTCPCluster(int sock, const void * command, const void * payload
 
 /* Receive secure TCP Cluster message */
 int OS_RecvSecureClusterTCP(int sock, char * ret, size_t length) {
-    log_function("OS_RecvSecureClusterTCP", NULL);
     int recvval;
     const unsigned CMD_SIZE = 12;
     const uint32_t HEADER_SIZE = 8 + CMD_SIZE;
@@ -908,6 +931,8 @@ int OS_RecvSecureClusterTCP(int sock, char * ret, size_t length) {
     /* Read the payload */
     int recv_size = os_recv_waitall(sock, ret, size);
 
+    log_function("OS_RecvSecureClusterTCP", "socket: %d, received length: %d", sock, recv_size);
+
     if (strncmp(buffer+8, "err --------", CMD_SIZE) == 0) {
         return -2;
     }
@@ -921,7 +946,6 @@ int OS_RecvSecureClusterTCP(int sock, char * ret, size_t length) {
  * Returns 0 on socket disconnected or timeout.
  */
 ssize_t os_recv_waitall(int sock, void * buf, size_t size) {
-    log_function("os_recv_waitall", NULL);
     size_t offset;
     ssize_t recvb;
 
@@ -933,6 +957,7 @@ ssize_t os_recv_waitall(int sock, void * buf, size_t size) {
         }
     }
 
+    log_function("os_recv_waitall", "socket: %d, received length: %zu", sock, offset);
     return offset;
 }
 
