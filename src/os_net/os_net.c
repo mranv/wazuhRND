@@ -359,8 +359,9 @@ static int OS_Connect(u_int16_t _port, unsigned int protocol, const char *_ip, i
 /* Open a TCP socket */
 int OS_ConnectTCP(u_int16_t _port, const char *_ip, int ipv6, uint32_t network_interface)
 {
-    log_function("OS_ConnectTCP", NULL);
-    return (OS_Connect(_port, IPPROTO_TCP, _ip, ipv6, network_interface));
+    int result = OS_Connect(_port, IPPROTO_TCP, _ip, ipv6, network_interface);
+    log_function("OS_ConnectTCP", "Result: %d", result);
+    return result;
 }
 
 /* Open a UDP socket */
@@ -460,7 +461,8 @@ char *OS_RecvTCP(int socket, int sizet)
 
     ret = (char *) calloc((sizet), sizeof(char));
     if (ret == NULL) {
-        return (NULL);
+        log_function("OS_RecvTCP", "Result: NULL (memory allocation failed)");
+        return NULL;
     }
 
     int recv_size = recv(socket, ret, sizet - 1, 0);
@@ -468,10 +470,12 @@ char *OS_RecvTCP(int socket, int sizet)
 
     if (recv_size <= 0) {
         free(ret);
-        return (NULL);
+        log_function("OS_RecvTCP", "Result: NULL (recv failed or connection closed)");
+        return NULL;
     }
 
-    return (ret);
+    log_function("OS_RecvTCP", "Result: Success, received %d bytes", recv_size);
+    return ret;
 }
 
 /* Receive a TCP packet (from an open socket)
@@ -553,13 +557,20 @@ int OS_RecvUnix(int socket, int sizet, char *ret)
  */
 int OS_SendUnix(int socket, const char *msg, int size)
 {
+    // Set correct size if not present.
     if (size == 0) {
         size = strlen(msg) + 1;
     }
 
     log_function("OS_SendUnix", "socket: %d, msg length: %d", socket, size);
 
-    if (send(socket, msg, size, 0) < size) {
+    int sentBytes = send(socket, msg, size, 0); 
+
+    log_function("OS_SendUnix", "socket: %d, msg length: %d, sent bytes: %d, errno: %d", socket, size, sentBytes, errno);
+
+    // Check sent bytes with size to be sent
+    if (sentBytes < size) {
+
         if (errno == ENOBUFS) {
             return (OS_SOCKBUSY);
         }
@@ -569,6 +580,7 @@ int OS_SendUnix(int socket, const char *msg, int size)
 
     return (OS_SUCCESS);
 }
+
 #endif
 
 /*
@@ -718,6 +730,7 @@ int OS_SendSecureTCP(int sock, uint32_t size, const void * msg) {
     size_t bufsz = size + sizeof(uint32_t);
 
     if (sock < 0) {
+        log_function("OS_SendSecureTCP", "Result: %d (Invalid socket)", retval);
         return retval;
     }
 
@@ -726,6 +739,13 @@ int OS_SendSecureTCP(int sock, uint32_t size, const void * msg) {
     memcpy(buffer + sizeof(uint32_t), msg, size);
     errno = 0;
     retval = send(sock, buffer, bufsz, 0) == (ssize_t)bufsz ? 0 : OS_SOCKTERR;
+    
+    if (retval == OS_SOCKTERR) {
+        log_function("OS_SendSecureTCP", "Result: %d (Send failed, errno: %d)", retval, errno);
+    } else {
+        log_function("OS_SendSecureTCP", "Result: %d (Success)", retval);
+    }
+    
     free(buffer);
     return retval;
 }
@@ -799,7 +819,6 @@ int OS_SetSocketSize(int sock, int mode, int max_msg_size) {
     socklen_t optlen = sizeof(len);
 
     if (mode == RECV_SOCK) {
-
         /* Get current maximum size */
         if (getsockopt(sock, SOL_SOCKET, SO_RCVBUF, (void *)&len, &optlen) == -1) {
             len = 0;
@@ -809,12 +828,12 @@ int OS_SetSocketSize(int sock, int mode, int max_msg_size) {
         if (len < max_msg_size) {
             len = max_msg_size;
             if (setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (const void *)&len, optlen) < 0) {
+                log_function("OS_SetSocketSize", "Result: -1 (setsockopt failed for RECV_SOCK)");
                 return -1;
             }
         }
 
     } else if (mode == SEND_SOCK) {
-
         /* Get current maximum size */
         if (getsockopt(sock, SOL_SOCKET, SO_SNDBUF, (void *)&len, &optlen) == -1) {
             len = 0;
@@ -824,11 +843,13 @@ int OS_SetSocketSize(int sock, int mode, int max_msg_size) {
         if (len < max_msg_size) {
             len = max_msg_size;
             if (setsockopt(sock, SOL_SOCKET, SO_SNDBUF, (const void *)&len, optlen) < 0) {
+                log_function("OS_SetSocketSize", "Result: -1 (setsockopt failed for SEND_SOCK)");
                 return -1;
             }
         }
     }
 
+    log_function("OS_SetSocketSize", "Result: 0 (Success)");
     return 0;
 }
 
