@@ -65,15 +65,16 @@ class BaseQueue:
             if length_send_buffer < WazuhQueue.MAX_MSG_SIZE:
                 self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, WazuhQueue.MAX_MSG_SIZE)
         except Exception:
+            
+            # logger
+            custom_logger(f"if not connet to the socket : {WazuhInternalError(1010, self.path)}")
+            
             raise WazuhInternalError(1010, self.path)
 
     def __enter__(self):
         return self
 
     def _send(self, msg: bytes) -> None:
-        
-        # logger
-        custom_logger(f"_send (WazuhQueue) class Base Queue")
         
         """Send a message through a socket.
 
@@ -88,17 +89,30 @@ class BaseQueue:
             If there was an error communicating with queue.
         """
         try:
+            # logger
+            custom_logger(f"_send (WazuhQueue) class Base Queue")
             sent = self.socket.send(msg)
+            custom_logger(f"the _send the massge Throue socket byts lenth : {len(msg)}")
+
+            # logger
+            custom_logger(f"send message to troue socket")
 
             if sent == 0:
+                # logger
+                custom_logger(f"Send a message through a socket. Error : {WazuhInternalError(1011, self.path)}")
                 raise WazuhInternalError(1011, self.path)
+                
         except socket.error:
+            
+            # logger 
+            custom_logger(f"wazuh socket error : {WazuhInternalError(1011, self.path)}")
+            
             raise WazuhInternalError(1011, self.path)
 
     def close(self):
         
         # logger
-        custom_logger(f"close (wazuh Queue) class BaseQueue")
+        custom_logger(f"close the connetion of socket (wazuh Queue) class BaseQueue")
         
         self.socket.close()
 
@@ -169,7 +183,14 @@ class WazuhQueue(BaseQueue):
         """
         # Variables to check if msg is a non active-response message or a restart message
         msg_is_no_ar = msg in [WazuhQueue.HC_SK_RESTART, WazuhQueue.HC_FORCE_RECONNECT]
+        
+        # logger 
+        custom_logger(f"Variables to check if msg is a non active-response message or a restart message : {msg_is_no_ar} ")
+
         msg_is_restart = msg in [WazuhQueue.RESTART_AGENTS, WazuhQueue.RESTART_AGENTS_JSON]
+        
+        # logger 
+        custom_logger(f"Variables to check if msg is a non active-response message or a restart message : {msg_is_restart} ")
 
         # Create flag and string used to specify the agent ID
         if agent_id:
@@ -190,6 +211,10 @@ class WazuhQueue(BaseQueue):
         else:
             # If msg is not a non active-response command and not a restart command, raises WazuhInternalError
             if not msg_is_no_ar and not msg_is_restart:
+                
+                # logger
+                custom_logger(f"msg_is_no_ar : {WazuhInternalError(1012, msg)} ")
+                
                 raise WazuhInternalError(1012, msg)
             socket_msg = create_wazuh_queue_socket_msg(flag, str_agent_id, msg, is_restart=msg_is_restart)
             # Return message

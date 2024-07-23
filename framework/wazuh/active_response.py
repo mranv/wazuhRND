@@ -51,13 +51,25 @@ def run_command(agent_list: list = None, command: str = '', arguments: list = No
             for agent_id in agent_list:
                 try:
                     if agent_id not in system_agents:
+                        
+                        # logger
+                        custom_logger(f"if agent id not in the system_agetn : {WazuhResourceNotFound(1701)}")
+                        
                         raise WazuhResourceNotFound(1701)
                     if agent_id == "000":
+                        
+                        # logger
+                        custom_logger(f"if the agnet is the Manger (000) : {WazuhError(1703)}")
+                        
                         raise WazuhError(1703)
                     active_response.send_ar_message(agent_id, wq, command, arguments, custom, alert)
                     result.affected_items.append(agent_id)
                     result.total_affected_items += 1
                 except WazuhException as e:
+                    
+                    # logger
+                    custom_logger(f"sen the AR messeg Error : {e}")
+                    
                     result.add_failed_item(id_=agent_id, error=e)
             result.affected_items.sort(key=int)
 
