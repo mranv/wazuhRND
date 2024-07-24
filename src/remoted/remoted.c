@@ -34,7 +34,7 @@ void HandleRemote(int uid)
     int recv_timeout;    //timeout in seconds waiting for a client reply
     char * str_protocol = NULL;
 
-    recv_timeout = getDefine_Int("remoted", "recv_timeout", 1, 12);
+    recv_timeout = getDefine_Int("remoted", "recv_timeout", 1, 60);
 
     tcp_keepidle = getDefine_Int("remoted", "tcp_keepidle", 1, 7200);
     tcp_keepintvl = getDefine_Int("remoted", "tcp_keepintvl", 1, 100);
