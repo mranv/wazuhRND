@@ -9,3 +9,11 @@ def custom_logger(message):
     
     with open(log_file_path, 'a') as file:
         file.write(str(log_entry))
+        
+def custom_logger_loop(message):
+    log_file_path = "/var/ossec/logs/task_loop_log.log"
+    timestamp = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
+    log_entry = f"{timestamp} {message}\n"
+    
+    with open(log_file_path, 'a') as file:
+        file.write(str(log_entry))
