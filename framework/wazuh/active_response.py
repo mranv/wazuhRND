@@ -8,7 +8,7 @@ from wazuh.core.exception import WazuhException, WazuhError, WazuhResourceNotFou
 from wazuh.core.wazuh_queue import WazuhQueue
 from wazuh.core.results import AffectedItemsWazuhResult
 from wazuh.rbac.decorators import expose_resources
-from wazuh.core.custom_logger import custom_logger
+from wazuh.core.custom_logger import custom_logger,custom_logger_loop
 import asyncio
 
 
@@ -40,7 +40,7 @@ async def run_command_async(agent_list, command, arguments, custom, alert, resul
     for agent_id in agent_list:
         # Set a timeout of 9 seconds for each agent processing
         tasks.append(asyncio.wait_for(process_agent(agent_id, system_agents, wq, result, command, arguments, custom, alert), timeout=9))
-    
+        custom_logger_loop(f"task in for loop : {tasks} ")
     await asyncio.gather(*tasks, return_exceptions=True)
 
 @expose_resources(actions=['active-response:command'], resources=['agent:id:{agent_list}'],

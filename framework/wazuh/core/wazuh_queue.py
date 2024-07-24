@@ -92,19 +92,17 @@ class BaseQueue:
             # logger
             custom_logger(f"_send (WazuhQueue) class Base Queue")
             sent = self.socket.send(msg)
-            custom_logger(f"the _send the massge Throue socket byts lenth : {len(msg)}")
-
-            # logger
-            custom_logger(f"send message to troue socket")
+            custom_logger(f"the _send the massge Throue socket byts lenth : {len(msg)}, sent = {sent}")
 
             if sent == 0:
                 # logger
                 custom_logger(f"Send a message through a socket. Error : {WazuhInternalError(1011, self.path)}")
                 raise WazuhInternalError(1011, self.path)
                 
-        except socket.error:
+        except socket.error as e:
             
             # logger 
+            custom_logger(f"socket error : {e}")
             custom_logger(f"wazuh socket error : {WazuhInternalError(1011, self.path)}")
             
             raise WazuhInternalError(1011, self.path)
@@ -227,8 +225,10 @@ class WazuhQueue(BaseQueue):
 
         try:
             # Send message
+            custom_logger(f"send the msg throu the socket msg : {socket_msg}")
             self._send(socket_msg.encode())
         except:
+            custom_logger(f"if not send the msg thrue the socket Error : {WazuhError(1014, extra_message=f": WazuhQueue socket with path {self.path}")}")
             raise WazuhError(1014, extra_message=f": WazuhQueue socket with path {self.path}")
 
         # logger
