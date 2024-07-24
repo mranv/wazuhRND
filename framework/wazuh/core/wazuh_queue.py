@@ -228,7 +228,7 @@ class WazuhQueue(BaseQueue):
             custom_logger(f"send the msg throu the socket msg : {socket_msg}")
             self._send(socket_msg.encode())
         except:
-            custom_logger(f"if not send the msg thrue the socket Error : {WazuhError(1014, extra_message=f": WazuhQueue socket with path {self.path}")}")
+            custom_logger(f"if not send the msg thrue the socket Error : {WazuhError(1014)} mssage : WazuhQueue socket with path {self.path}")
             raise WazuhError(1014, extra_message=f": WazuhQueue socket with path {self.path}")
 
         # logger
