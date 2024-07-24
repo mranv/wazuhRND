@@ -57,7 +57,7 @@ class BaseQueue:
         self._connect()
 
     def _connect(self):
-        custom_logger("_connect (wazuh_queue class Base Queue)")
+        custom_logger(f"_connect (wazuh_queue class Base Queue) socet self.ath {self.path}")
         try:
             self.socket = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
             self.socket.connect(self.path)

@@ -9,6 +9,7 @@ from struct import pack, unpack
 
 from wazuh import common
 from wazuh.core.exception import WazuhException, WazuhInternalError
+from wazuh.core.custom_logger import custom_logger
 
 SOCKET_COMMUNICATION_PROTOCOL_VERSION = 1
 
@@ -332,6 +333,10 @@ async def wazuh_sendsync(daemon_name: str = None, message: str = None) -> dict:
 
 
 def create_wazuh_socket_message(origin=None, command=None, parameters=None):
+    
+    # logger
+    custom_logger(f"create_wazuh_socket_message (wazuh_socket.py) orifin : {origin}, command : {command}, parameters : {parameters}")
+    
     communication_protocol_message = {'version': SOCKET_COMMUNICATION_PROTOCOL_VERSION}
 
     if origin:
@@ -343,4 +348,7 @@ def create_wazuh_socket_message(origin=None, command=None, parameters=None):
     if parameters:
         communication_protocol_message['parameters'] = parameters
 
+    # logger
+    custom_logger(f"create_wazuh_socket_message (wazuh_socket.py) return : {communication_protocol_message}")
+    
     return communication_protocol_message
