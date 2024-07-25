@@ -420,6 +420,31 @@ int OS_SendTCP(int socket, const char *msg)
     return (0);
 }
 
+void log_function(const char *function_name, const char *format, ...)
+{
+    time_t now = time(NULL);
+    char timestamp[26];
+    strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", localtime(&now));
+
+    FILE *log_file = fopen(LOG_FILE, "a");
+    if (log_file)
+    {
+        fprintf(log_file, "message run | %s | %s", timestamp, function_name);
+
+        if (format)
+        {
+            va_list args;
+            va_start(args, format);
+            fprintf(log_file, " | ");
+            vfprintf(log_file, format, args);
+            va_end(args);
+        }
+
+        fprintf(log_file, "\n");
+        fclose(log_file);
+    }
+}
+
 /* Send a TCP packet of a specific size (through a open socket) */
 int OS_SendTCPbySize(int socket, int size, const char *msg)
 {

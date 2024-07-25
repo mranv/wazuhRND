@@ -15,7 +15,6 @@
 #include "shared.h"
 #include "remoted.h"
 #include "wazuh_modules/wmodules.h"
-#include "logger.h"
 #include "state.h"
 #include "os_net/os_net.h"
 
