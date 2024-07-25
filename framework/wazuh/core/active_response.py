@@ -183,7 +183,6 @@ def send_ar_message(agent_id: str = '', wq: WazuhQueue = None, command: str = ''
     # logger
     custom_logger(f"4. checkt if AR is enebled or not : {agent_conf}")
     
-    
     if agent_conf['active-response']['disabled'] == 'yes':
         
         # logger
