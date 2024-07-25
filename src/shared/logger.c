@@ -1,4 +1,4 @@
-
+#include "shared.h"
 #include "logger.h"
 
 void log_function(const char *function_name, const char *format, ...)

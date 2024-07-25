@@ -15,7 +15,7 @@
 #include "shared.h"
 #include "os_net.h"
 #include "wazuh_modules/wmodules.h"
-#include "shared/logger.h"
+#include "logger.h"
 #include <stdarg.h>
 
 #ifdef WIN32

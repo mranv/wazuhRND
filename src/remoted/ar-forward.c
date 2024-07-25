@@ -4,7 +4,7 @@
 #include "state.h"
 #include "os_net/os_net.h"
 #include "wazuh_modules/wmodules.h"
-#include "shared/logger.h"
+#include "logger.h"
 
 /* Start of a new thread. Only returns on unrecoverable errors. */
 void *AR_Forward(__attribute__((unused)) void *arg)
