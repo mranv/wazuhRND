@@ -15,11 +15,12 @@
 #include "remoted.h"
 #include "state.h"
 #include "wazuh_modules/wmodules.h"
+#include "wazuh_modules/log_function.h"
 
 #define COUNTER_LENGTH 64
 
 // Dispatcher theads entry point
-static void * req_dispatch(req_node_t * node);
+static void *req_dispatch(req_node_t *node);
 
 // Increment request pool
 static void req_pool_post();
@@ -27,17 +28,35 @@ static void req_pool_post();
 // Wait for available pool. Returns 1 on success or 0 on error
 static int req_pool_wait();
 
-static const char * WR_INTERNAL_ERROR = "err Internal error";
-static const char * WR_SEND_ERROR = "err Cannot send request";
-static const char * WR_ATTEMPT_ERROR = "err Maximum attempts exceeded";
-static const char * WR_TIMEOUT_ERROR = "err Response timeout";
+static const char *WR_INTERNAL_ERROR = "err Internal error";
+static const char *WR_SEND_ERROR = "err Cannot send request";
+static const char *WR_ATTEMPT_ERROR = "err Maximum attempts exceeded";
+static const char *WR_TIMEOUT_ERROR = "err Response timeout";
 
-static OSHash * req_table;
+static OSHash *req_table;
 static pthread_mutex_t mutex_table = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t mutex_pool = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t pool_available = PTHREAD_COND_INITIALIZER;
 
-int rto_sec;
+int rto_sec; // If buffer is ACK, wait for response
+
+for (attempts = 0; attempts < max_attempts && (!node->buffer || IS_ACK(node->buffer)); attempts++)
+{
+    gettimeofday(&now, NULL);
+    timeout.tv_sec = now.tv_sec + response_timeout;
+    timeout.tv_nsec = now.tv_usec * 1000;
+
+    if (pthread_cond_timedwait(&node->available, &node->mutex, &timeout) == 0)
+    {
+        continue;
+    }
+    else
+    {
+        merror("Response timeout for request counter '%s'", node->counter);
+        OS_SendSecureTCP(node->sock, strlen(WR_TIMEOUT_ERROR), WR_TIMEOUT_ERROR);
+        goto cleanup;
+    }
+}
 int rto_msec;
 int max_attempts;
 int request_pool;
@@ -46,7 +65,8 @@ int response_timeout;
 int guess_agent_group;
 
 // Initialize request module
-void req_init() {
+void req_init()
+{
     // Get values from internal options
     request_pool = getDefine_Int("remoted", "request_pool", 1, 4096);
     request_timeout = getDefine_Int("remoted", "request_timeout", 1, 600);
@@ -56,24 +76,44 @@ void req_init() {
     max_attempts = getDefine_Int("remoted", "max_attempts", 1, 16);
     guess_agent_group = getDefine_Int("remoted", "guess_agent_group", 0, 1);
 
-    if (guess_agent_group && logr.worker_node) {
+    if (guess_agent_group && logr.worker_node)
+    {
         mwarn("The internal option guess_agent_group must be configured on the master node.");
     }
 
     // Create hash table
-    if (req_table = OSHash_Create(), !req_table) {
+    if (req_table = OS // If buffer is ACK, wait for response
+
+        for (attempts = 0; attempts < max_attempts && (!node->buffer || IS_ACK(node->buffer)); attempts++) {
+        gettimeofday(&now, NULL);
+        timeout.tv_sec = now.tv_sec + response_timeout;
+        timeout.tv_nsec = now.tv_usec * 1000;
+
+        if (pthread_cond_timedwait(&node->available, &node->mutex, &timeout) == 0)
+        {
+            continue;
+        }
+        else
+        {
+            merror("Response timeout for request counter '%s'", node->counter);
+            OS_SendSecureTCP(node->sock, strlen(WR_TIMEOUT_ERROR), WR_TIMEOUT_ERROR);
+            goto cleanup;
+        } } Hash_Create(),
+        !req_table)
+    {
         merror_exit("At OSHash_Create()");
     }
     OSHash_SetFreeDataPointer(req_table, (void (*)(void *))req_free);
 }
 
 // Request sender
-void req_sender(int peer, char *buffer, ssize_t length) {
+void req_sender(int peer, char *buffer, ssize_t length)
+{
     int error;
     unsigned int counter = (unsigned int)os_random();
     char counter_s[COUNTER_LENGTH];
-    req_node_t * node;
-    const char* target = "";
+    req_node_t *node;
+    const char *target = "";
 
     // Set counter, create node and insert into hash table
     snprintf(counter_s, COUNTER_LENGTH, "%x", counter++);
@@ -83,7 +123,8 @@ void req_sender(int peer, char *buffer, ssize_t length) {
     error = OSHash_Add(req_table, counter_s, node);
     w_mutex_unlock(&mutex_table);
 
-    switch (error) {
+    switch (error)
+    {
     case 0:
         merror("At OSHash_Add()");
         req_free(node);
@@ -96,7 +137,8 @@ void req_sender(int peer, char *buffer, ssize_t length) {
 
     case 2:
         // Wait for thread pool
-        if (!req_pool_wait()) {
+        if (!req_pool_wait())
+        {
             break;
         }
 
@@ -115,17 +157,18 @@ void req_sender(int peer, char *buffer, ssize_t length) {
 }
 
 // Dispatcher theads entry point
-void * req_dispatch(req_node_t * node) {
+void *req_dispatch(req_node_t *node)
+{
     int attempts;
     int ploff;
     long nsec;
     size_t ldata;
-    char * agentid = NULL;
-    char * payload = NULL;
-    char * _payload;
+    char *agentid = NULL;
+    char *payload = NULL;
+    char *_payload;
     char response[REQ_RESPONSE_LENGTH];
     struct timespec timeout;
-    struct timeval now = { 0, 0 };
+    struct timeval now = {0, 0};
     int protocol = -1;
 
     mdebug2("Running request dispatcher thread. Counter=%s", node->counter);
@@ -133,7 +176,8 @@ void * req_dispatch(req_node_t * node) {
     w_mutex_lock(&node->mutex);
 
     // Get agent ID and payload
-    if (_payload = strchr(node->buffer, ' '), !_payload) {
+    if (_payload = strchr(node->buffer, ' '), !_payload)
+    {
         merror("Request has no agent id.");
         goto cleanup;
     }
@@ -158,32 +202,41 @@ void * req_dispatch(req_node_t * node) {
     key_lock_read();
     protocol = w_get_agent_net_protocol_from_keystore(&keys, agentid);
     key_unlock();
-    if (protocol < 0) {
+    if (protocol < 0)
+    {
         merror(AR_NOAGENT_ERROR, agentid);
         goto cleanup;
     }
 
-    for (attempts = 0; attempts < max_attempts; attempts++) {
+    for (attempts = 0; attempts < max_attempts; attempts++)
+    {
         // Try to send message
-        if (send_msg(agentid, payload, ldata) < 0) {
+        if (send_msg(agentid, payload, ldata) < 0)
+        {
             merror("Cannot send request to agent '%s'", agentid);
             OS_SendSecureTCP(node->sock, strlen(WR_SEND_ERROR), WR_SEND_ERROR);
             goto cleanup;
-        } else {
+        }
+        else
+        {
             rem_inc_send_request(agentid);
         }
 
         // Wait for ACK or response, only in UDP mode
-        if (protocol == REMOTED_NET_PROTOCOL_UDP) {
+        if (protocol == REMOTED_NET_PROTOCOL_UDP)
+        {
             gettimeofday(&now, NULL);
             nsec = now.tv_usec * 1000 + rto_msec * 1000000;
             timeout.tv_sec = now.tv_sec + rto_sec + nsec / 1000000000;
             timeout.tv_nsec = nsec % 1000000000;
 
-            if (pthread_cond_timedwait(&node->available, &node->mutex, &timeout) == 0 && node->buffer) {
+            if (pthread_cond_timedwait(&node->available, &node->mutex, &timeout) == 0 && node->buffer)
+            {
                 break;
             }
-        } else {
+        }
+        else
+        {
             // TCP handles ACK by itself
             break;
         }
@@ -191,49 +244,63 @@ void * req_dispatch(req_node_t * node) {
         mdebug2("Timeout for waiting ACK from agent '%s', resending.", agentid);
     }
 
-    if (attempts == max_attempts) {
+    if (attempts == max_attempts)
+    {
         merror("Couldn't send request to agent '%s': number of attempts exceeded.", agentid);
         OS_SendSecureTCP(node->sock, strlen(WR_ATTEMPT_ERROR), WR_ATTEMPT_ERROR);
         goto cleanup;
     }
 
-    // If buffer is ACK, wait for response
-    for (attempts = 0; attempts < max_attempts && (!node->buffer || IS_ACK(node->buffer)); attempts++) {
+    log_function("main", "Entering response wait loop for counter '%s'", node->counter);
+
+    for (int attempts = 0; attempts < max_attempts && (!node->buffer || IS_ACK(node->buffer)); attempts++)
+    {
         gettimeofday(&now, NULL);
         timeout.tv_sec = now.tv_sec + response_timeout;
         timeout.tv_nsec = now.tv_usec * 1000;
 
-        if (pthread_cond_timedwait(&node->available, &node->mutex, &timeout) == 0) {
+        if (pthread_cond_timedwait(&node->available, &node->mutex, &timeout) == 0)
+        {
+            log_function("main", "Received response for counter '%s'", node->counter);
             continue;
-        } else {
+        }
+        else
+        {
+            log_function("main", "Response timeout for request counter '%s'", node->counter);
             merror("Response timeout for request counter '%s'", node->counter);
             OS_SendSecureTCP(node->sock, strlen(WR_TIMEOUT_ERROR), WR_TIMEOUT_ERROR);
+            log_function("main", "Sent WR_TIMEOUT_ERROR for counter '%s'", node->counter);
             goto cleanup;
         }
     }
 
-    if (attempts == max_attempts) {
+    if (attempts == max_attempts)
+    {
         merror("Couldn't get response from agent '%s': number of attempts exceeded.", agentid);
         OS_SendSecureTCP(node->sock, strlen(WR_ATTEMPT_ERROR), WR_ATTEMPT_ERROR);
         goto cleanup;
     }
 
     // Send ACK, only in UDP mode
-    if (protocol == REMOTED_NET_PROTOCOL_UDP) {
+    if (protocol == REMOTED_NET_PROTOCOL_UDP)
+    {
         // Example: #!-req 16 ack
         mdebug2("Sending ack (%s).", node->counter);
         snprintf(response, REQ_RESPONSE_LENGTH, CONTROL_HEADER HC_REQUEST "%s ack", node->counter);
-        if (send_msg(agentid, response, -1) >= 0) {
+        if (send_msg(agentid, response, -1) >= 0)
+        {
             rem_inc_send_request(agentid);
         }
     }
 
     // Send response to local peer
-    if (node->buffer) {
+    if (node->buffer)
+    {
         mdebug2("Sending response: '%s'", node->buffer);
     }
 
-    if (OS_SendSecureTCP(node->sock, node->length, node->buffer) != 0) {
+    if (OS_SendSecureTCP(node->sock, node->length, node->buffer) != 0)
+    {
         mwarn("At OS_SendSecureTCP(): %s", strerror(errno));
     }
 
@@ -242,7 +309,8 @@ cleanup:
 
     w_mutex_lock(&mutex_table);
 
-    if (!OSHash_Delete(req_table, node->counter)) {
+    if (!OSHash_Delete(req_table, node->counter))
+    {
         merror("At OSHash_Delete(): no such key.");
     }
 
@@ -257,17 +325,21 @@ cleanup:
 }
 
 // Save request data (ack or response). Return 0 on success or -1 on error.
-int req_save(const char * counter, const char * buffer, size_t length) {
-    req_node_t * node;
+int req_save(const char *counter, const char *buffer, size_t length)
+{
+    req_node_t *node;
     int retval = 0;
 
     mdebug2("Saving '%s:%s'", counter, buffer);
 
     w_mutex_lock(&mutex_table);
 
-    if (node = OSHash_Get(req_table, counter), node) {
+    if (node = OSHash_Get(req_table, counter), node)
+    {
         req_update(node, buffer, length);
-    } else {
+    }
+    else
+    {
         mdebug1("Request counter (%s) not found. Duplicated message?", counter);
         retval = -1;
     }
@@ -278,7 +350,8 @@ int req_save(const char * counter, const char * buffer, size_t length) {
 }
 
 // Increment request pool
-void req_pool_post() {
+void req_pool_post()
+{
     w_mutex_lock(&mutex_pool);
     request_pool++;
     w_cond_signal(&pool_available);
@@ -286,19 +359,22 @@ void req_pool_post() {
 }
 
 // Wait for available pool. Returns 1 on success or 0 on error
-int req_pool_wait() {
+int req_pool_wait()
+{
     struct timespec timeout;
-    struct timeval now = { 0, 0 };
+    struct timeval now = {0, 0};
     int wait_ok = 1;
 
     w_mutex_lock(&mutex_pool);
 
-    while (!request_pool && wait_ok) {
+    while (!request_pool && wait_ok)
+    {
         gettimeofday(&now, NULL);
         timeout.tv_sec = now.tv_sec + request_timeout;
         timeout.tv_nsec = now.tv_usec * 1000;
 
-        switch (pthread_cond_timedwait(&pool_available, &mutex_pool, &timeout)) {
+        switch (pthread_cond_timedwait(&pool_available, &mutex_pool, &timeout))
+        {
         case 0:
             break;
 
@@ -314,7 +390,8 @@ int req_pool_wait() {
         }
     }
 
-    if (request_pool) {
+    if (request_pool)
+    {
         request_pool--;
     }
 
