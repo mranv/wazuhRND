@@ -23,6 +23,7 @@ from wazuh.core import wazuh_socket
 from wazuh.core.exception import WazuhInternalError, WazuhError
 from wazuh.core.exception import WazuhResourceNotFound
 from wazuh.core.utils import cut_array, load_wazuh_xml, safe_move
+from wazuh.core.custom_logger import custom_logger
 
 logger = logging.getLogger('wazuh')
 
@@ -1075,6 +1076,11 @@ def upload_group_file(group_id: str, file_data: str, file_name: str = 'agent.con
 
 
 def get_active_configuration(agent_id: str, component: str, configuration: str) -> dict:
+    
+    # logger
+    custom_logger(f"get_active_configuration (configraion.py)")
+    custom_logger(f"get_active_configuration (configraion.py) paramitor - agentid : {agent_id}, component : {component}, configuration : {configuration}")
+    
     """Get an agent's component active configuration.
 
     Parameters
@@ -1120,11 +1126,23 @@ def get_active_configuration(agent_id: str, component: str, configuration: str) 
                                     'wmodules': 'sockets'}
 
     if not component or not configuration:
+        
+        # logger
+        custom_logger(f"if not componet or not configration : ERROR {WazuhError(1307)}")
+         
         raise WazuhError(1307)
 
     # Check if the component is correct
     components = component_socket_mapping.keys()
+    
+    # logger 
+    custom_logger(f"get_active_configration (agentpy) componets : ")
+    
     if component not in components:
+        
+        # logger 
+        custom_logger(f"if componet not in compontes ERROR : {WazuhError(1101)}, Valid components: {components}'")
+        
         raise WazuhError(1101, f'Valid components: {", ".join(components)}')
 
     def get_active_configuration_manager():
@@ -1196,32 +1214,76 @@ def get_active_configuration(agent_id: str, component: str, configuration: str) 
         # Always communicate with remote socket
         dest_socket = common.REMOTED_SOCKET
 
+        # logger
+        custom_logger(f"get_active_configration_agnet start")
+        custom_logger(f"dest_socket : {dest_socket}")
+
         # Simple socket message
         msg = f"{str(agent_id).zfill(3)} {component} {GETCONFIG_COMMAND} {configuration}"
+        
+        # logger
+        custom_logger(f"simpal socket msg : {msg}")
 
         # Socket connection
         try:
             s = wazuh_socket.WazuhSocket(dest_socket)
-        except WazuhInternalError:
+            
+            # logger
+            custom_logger(f"socket conneciton from acative configration : {s}")
+            
+        except WazuhInternalError as e:
+            
+            # logger
+            custom_logger(f"if have andy issue in the socket connection WazuhInternalError : {e}")
+            
             raise
         except Exception as unhandled_exc:
+            
+            # logger
+            custom_logger(f"second exption unhndled exp : {WazuhInternalError(1121, extra_message=str(unhandled_exc))}")
+            
             raise WazuhInternalError(1121, extra_message=str(unhandled_exc))
 
+        # solatuion funcion
+        
         # Send message
-        s.send(msg.encode())
+        try:
+            s.send(msg.encode())
+            
+            # Logger
+            custom_logger(f"send msg : {msg.encode()}")
+            
+        except Exception as e:
+            
+            # logger
+            custom_logger(f"if get any error in socket communication : {e}")
 
         # Receive response
         try:
             # Receive data length
             rec_msg_ok, rec_msg = s.receive().decode().split(" ", 1)
+            
+            # logger
+            custom_logger(f"receive rec_msg_ok : {rec_msg_ok}, rec_msg {rec_msg}")
+            
         except ValueError:
+            
+            # logger
+            custom_logger(f"ERROR : {WazuhInternalError(1118)} Data could not be received")
+            
             raise WazuhInternalError(1118, extra_message="Data could not be received")
         finally:
             s.close()
+            
+        # Logger
+        custom_logger(f"get active configranton agent return rec_msg_ok : {rec_msg_ok}, rec_msg {rec_msg}")
 
         return rec_msg_ok, rec_msg
 
     rec_error, rec_data = get_active_configuration_agent() if agent_id != '000' else get_active_configuration_manager()
+    
+    # Logger
+    custom_logger(f"check the rec_error start")
 
     if rec_error == 'ok' or rec_error == 0:
         data = json.loads(rec_data) if isinstance(rec_data, str) else rec_data
@@ -1233,9 +1295,16 @@ def get_active_configuration(agent_id: str, component: str, configuration: str) 
                     data['authd.pass'] = f.read().rstrip()
             except IOError:
                 pass
+            
+        # logger
+        custom_logger(f"data : {data}")
 
         return data
     else:
+        
+        # logger
+        custom_logger(f"if")
+        
         raise WazuhError(1117 if "No such file or directory" in rec_data or "Cannot send request" in rec_data else 1116,
                          extra_message=f'{component}:{configuration}')
 
