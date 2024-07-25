@@ -9,7 +9,7 @@ from struct import pack, unpack
 
 from wazuh import common
 from wazuh.core.exception import WazuhException, WazuhInternalError
-from wazuh.core.custom_logger import custom_logger
+from wazuh.core.custom_logger import socket_logger
 
 SOCKET_COMMUNICATION_PROTOCOL_VERSION = 1
 
@@ -45,12 +45,12 @@ class WazuhSocket:
     def send(self, msg_bytes, header_format="<I"):
         
         # logger
-        custom_logger(f"send (wazuh_socket) -->> msg_bytes : {msg_bytes}, header_formal : {header_format}")
+        socket_logger(f"send (wazuh_socket) -->> msg_bytes : {msg_bytes}, header_formal : {header_format}")
         
         if not isinstance(msg_bytes, bytes):
             
             # logger
-            custom_logger(f"if not isintance {isinstance(msg_bytes, bytes)} and ERROR : {WazuhException(1105)} Type must be bytes")
+            socket_logger(f"if not isintance {isinstance(msg_bytes, bytes)} and ERROR : {WazuhException(1105)} Type must be bytes")
             
             raise WazuhException(1105, "Type must be bytes")
 
@@ -59,23 +59,26 @@ class WazuhSocket:
             if sent == 0:
                 
                 # logger
-                custom_logger(f"if number of bytes is sende in 0 then ERROR : {WazuhException(1014)}")
+                socket_logger(f"if number of bytes is sende in 0 then ERROR : {WazuhException(1014)}")
                 
                 raise WazuhException(1014, "Number of sent bytes is 0")
             
             # logger
-            custom_logger(f"send (wazuh_socket) return : {sent}")
+            socket_logger(f"send (wazuh_socket) return : {sent}")
             
             return sent
         except Exception as e:
             
             # logger
-            custom_logger(f"if get any error in the sent the msg to the agnet ERROR : {e} | and wazuh error is : {WazuhException(1014, str(e))}")
+            socket_logger(f"if get any error in the sent the msg to the agnet ERROR : {e} | and wazuh error is : {WazuhException(1014, str(e))}")
             
             raise WazuhException(1014, str(e))
 
     def receive(self, header_format="<I", header_size=4):
-
+        
+        # Logger
+        socket_logger(f"receive (wazuh_socket) -->> header_format : {header_format}")
+        
         try:
             size = unpack(header_format, self.s.recv(header_size, socket.MSG_WAITALL))[0]
             return self.s.recv(size, socket.MSG_WAITALL)
@@ -355,7 +358,7 @@ async def wazuh_sendsync(daemon_name: str = None, message: str = None) -> dict:
 def create_wazuh_socket_message(origin=None, command=None, parameters=None):
     
     # logger
-    custom_logger(f"create_wazuh_socket_message (wazuh_socket.py) orifin : {origin}, command : {command}, parameters : {parameters}")
+    socket_logger(f"create_wazuh_socket_message (wazuh_socket.py) orifin : {origin}, command : {command}, parameters : {parameters}")
     
     communication_protocol_message = {'version': SOCKET_COMMUNICATION_PROTOCOL_VERSION}
 
@@ -369,6 +372,6 @@ def create_wazuh_socket_message(origin=None, command=None, parameters=None):
         communication_protocol_message['parameters'] = parameters
 
     # logger
-    custom_logger(f"create_wazuh_socket_message (wazuh_socket.py) return : {communication_protocol_message}")
+    socket_logger(f"create_wazuh_socket_message (wazuh_socket.py) return : {communication_protocol_message}")
     
     return communication_protocol_message
