@@ -15,7 +15,6 @@
 #include "remoted.h"
 #include "state.h"
 #include "wazuh_modules/wmodules.h"
-#include "wazuh_modules/log_function.h"
 
 #define COUNTER_LENGTH 64
 
@@ -38,25 +37,7 @@ static pthread_mutex_t mutex_table = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t mutex_pool = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t pool_available = PTHREAD_COND_INITIALIZER;
 
-int rto_sec; // If buffer is ACK, wait for response
-
-for (attempts = 0; attempts < max_attempts && (!node->buffer || IS_ACK(node->buffer)); attempts++)
-{
-    gettimeofday(&now, NULL);
-    timeout.tv_sec = now.tv_sec + response_timeout;
-    timeout.tv_nsec = now.tv_usec * 1000;
-
-    if (pthread_cond_timedwait(&node->available, &node->mutex, &timeout) == 0)
-    {
-        continue;
-    }
-    else
-    {
-        merror("Response timeout for request counter '%s'", node->counter);
-        OS_SendSecureTCP(node->sock, strlen(WR_TIMEOUT_ERROR), WR_TIMEOUT_ERROR);
-        goto cleanup;
-    }
-}
+int rto_sec;
 int rto_msec;
 int max_attempts;
 int request_pool;
@@ -82,24 +63,7 @@ void req_init()
     }
 
     // Create hash table
-    if (req_table = OS // If buffer is ACK, wait for response
-
-        for (attempts = 0; attempts < max_attempts && (!node->buffer || IS_ACK(node->buffer)); attempts++) {
-        gettimeofday(&now, NULL);
-        timeout.tv_sec = now.tv_sec + response_timeout;
-        timeout.tv_nsec = now.tv_usec * 1000;
-
-        if (pthread_cond_timedwait(&node->available, &node->mutex, &timeout) == 0)
-        {
-            continue;
-        }
-        else
-        {
-            merror("Response timeout for request counter '%s'", node->counter);
-            OS_SendSecureTCP(node->sock, strlen(WR_TIMEOUT_ERROR), WR_TIMEOUT_ERROR);
-            goto cleanup;
-        } } Hash_Create(),
-        !req_table)
+    if (req_table = OSHash_Create(), !req_table)
     {
         merror_exit("At OSHash_Create()");
     }
@@ -251,9 +215,8 @@ void *req_dispatch(req_node_t *node)
         goto cleanup;
     }
 
-    log_function("main", "Entering response wait loop for counter '%s'", node->counter);
-
-    for (int attempts = 0; attempts < max_attempts && (!node->buffer || IS_ACK(node->buffer)); attempts++)
+    // If buffer is ACK, wait for response
+    for (attempts = 0; attempts < max_attempts && (!node->buffer || IS_ACK(node->buffer)); attempts++)
     {
         gettimeofday(&now, NULL);
         timeout.tv_sec = now.tv_sec + response_timeout;
@@ -261,15 +224,12 @@ void *req_dispatch(req_node_t *node)
 
         if (pthread_cond_timedwait(&node->available, &node->mutex, &timeout) == 0)
         {
-            log_function("main", "Received response for counter '%s'", node->counter);
             continue;
         }
         else
         {
-            log_function("main", "Response timeout for request counter '%s'", node->counter);
             merror("Response timeout for request counter '%s'", node->counter);
             OS_SendSecureTCP(node->sock, strlen(WR_TIMEOUT_ERROR), WR_TIMEOUT_ERROR);
-            log_function("main", "Sent WR_TIMEOUT_ERROR for counter '%s'", node->counter);
             goto cleanup;
         }
     }
