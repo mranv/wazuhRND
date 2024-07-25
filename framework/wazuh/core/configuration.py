@@ -1244,11 +1244,19 @@ def get_active_configuration(agent_id: str, component: str, configuration: str) 
             
             raise WazuhInternalError(1121, extra_message=str(unhandled_exc))
 
-        # Send message
-        s.send(msg.encode())
+        # solatuion funcion
         
-        # logger
-        custom_logger(f"send msg : {msg.encode()}")
+        # Send message
+        try:
+            s.send(msg.encode())
+            
+            # Logger
+            custom_logger(f"send msg : {msg.encode()}")
+            
+        except Exception as e:
+            
+            # logger
+            custom_logger(f"if get any error in socket communication : {e}")
 
         # Receive response
         try:

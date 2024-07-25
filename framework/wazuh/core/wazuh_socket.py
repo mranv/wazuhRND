@@ -43,15 +43,35 @@ class WazuhSocket:
         self.s.close()
 
     def send(self, msg_bytes, header_format="<I"):
+        
+        # logger
+        custom_logger(f"send (wazuh_socket) -->> msg_bytes : {msg_bytes}, header_formal : {header_format}")
+        
         if not isinstance(msg_bytes, bytes):
+            
+            # logger
+            custom_logger(f"if not isintance {isinstance(msg_bytes, bytes)} and ERROR : {WazuhException(1105)} Type must be bytes")
+            
             raise WazuhException(1105, "Type must be bytes")
 
         try:
             sent = self.s.send(pack(header_format, len(msg_bytes)) + msg_bytes)
             if sent == 0:
+                
+                # logger
+                custom_logger(f"if number of bytes is sende in 0 then ERROR : {WazuhException(1014)}")
+                
                 raise WazuhException(1014, "Number of sent bytes is 0")
+            
+            # logger
+            custom_logger(f"send (wazuh_socket) return : {sent}")
+            
             return sent
         except Exception as e:
+            
+            # logger
+            custom_logger(f"if get any error in the sent the msg to the agnet ERROR : {e} | and wazuh error is : {WazuhException(1014, str(e))}")
+            
             raise WazuhException(1014, str(e))
 
     def receive(self, header_format="<I", header_size=4):
