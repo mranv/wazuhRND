@@ -7,7 +7,8 @@
  * License (version 2) as published by the FSF - Free Software
  * Foundation
  */
-
+#include <stdio.h>
+#include <time.h>
 #include "shared.h"
 #include "os_xml/os_xml.h"
 #include "os_regex/os_regex.h"
