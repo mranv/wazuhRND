@@ -1,24 +1,16 @@
-/* Copyright (C) 2015, Wazuh Inc.
- * Copyright (C) 2009 Trend Micro Inc.
- * All right reserved.
- *
- * This program is free software; you can redistribute it
- * and/or modify it under the terms of the GNU General Public
- * License (version 2) as published by the FSF - Free Software
- * Foundation
- */
-
 #include <pthread.h>
-
 #include "shared.h"
 #include "remoted.h"
 #include "state.h"
 #include "os_net/os_net.h"
 #include "wazuh_modules/wmodules.h"
+#include "wazuh_modules/log_function.h"
 
 /* Start of a new thread. Only returns on unrecoverable errors. */
 void *AR_Forward(__attribute__((unused)) void *arg)
 {
+    log_function("AR_Forward", "Starting thread.");
+
     int arq = 0;
     int ar_location = 0;
     const char *path = ARQUEUE;
@@ -29,19 +21,23 @@ void *AR_Forward(__attribute__((unused)) void *arg)
     char *ar_agent_id = NULL;
     char *tmp_str = NULL;
 
+    log_function("AR_Forward", "Creating the unix queue with path: %s", path);
+
     /* Create the unix queue */
     if ((arq = StartMQ(path, READ, 0)) < 0)
     {
+        log_function("AR_Forward", "Failed to start message queue. Error: %s", strerror(errno));
         merror_exit(QUEUE_ERROR, path, strerror(errno));
     }
+
+    log_function("AR_Forward", "Message queue started successfully.");
 
     /* Daemon loop */
     while (1)
     {
         if (OS_RecvUnix(arq, OS_MAXSTR - 1, msg))
         {
-
-            mdebug2("Active response request received: %s", msg);
+            log_function("AR_Forward", "Active response request received: %s", msg);
 
             /* Always zero the location */
             ar_location = 0;
@@ -50,6 +46,7 @@ void *AR_Forward(__attribute__((unused)) void *arg)
             tmp_str = strchr(msg, ')');
             if (!tmp_str)
             {
+                log_function("AR_Forward", "Invalid message format: %s", msg);
                 mwarn(EXECD_INV_MSG, msg);
                 continue;
             }
@@ -59,6 +56,7 @@ void *AR_Forward(__attribute__((unused)) void *arg)
             tmp_str = strchr(tmp_str, ']');
             if (!tmp_str)
             {
+                log_function("AR_Forward", "Invalid message format: %s", msg);
                 mwarn(EXECD_INV_MSG, msg);
                 continue;
             }
@@ -90,6 +88,7 @@ void *AR_Forward(__attribute__((unused)) void *arg)
             tmp_str = strchr(tmp_str, ' ');
             if (!tmp_str)
             {
+                log_function("AR_Forward", "Invalid message format: %s", msg);
                 mwarn(EXECD_INV_MSG, msg);
                 continue;
             }
@@ -111,7 +110,7 @@ void *AR_Forward(__attribute__((unused)) void *arg)
                          tmp_str);
             }
 
-            mdebug2("Active response sent: %s", msg_to_send);
+            log_function("AR_Forward", "Active response sent: %s", msg_to_send);
 
             /* Send to ALL agents */
             if (ar_location & ALL_AGENTS)
@@ -148,4 +147,7 @@ void *AR_Forward(__attribute__((unused)) void *arg)
             }
         }
     }
+
+    log_function("AR_Forward", "Thread exiting.");
+    return NULL;
 }
