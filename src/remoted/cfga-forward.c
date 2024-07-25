@@ -15,12 +15,9 @@
 #include "shared.h"
 #include "remoted.h"
 #include "wazuh_modules/wmodules.h"
-#include "wazuh_modules/log_function.h"
+#include "shared/logger.h"
 #include "state.h"
 #include "os_net/os_net.h"
-
-/* Function to log messages */
-void log_function(const char *context, const char *format, ...);
 
 /* Start of a new thread. Only returns on unrecoverable errors. */
 void *SCFGA_Forward(__attribute__((unused)) void *arg)

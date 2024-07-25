@@ -1,8 +1,5 @@
-#include <stdio.h>
-#include <time.h>
-#include <errno.h>
 
-#define LOG_FILE "/var/ossec/logs/network_ops.log"
+#include "logger.h"
 
 void log_function(const char *function_name, const char *format, ...)
 {
