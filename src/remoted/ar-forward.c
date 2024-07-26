@@ -188,7 +188,7 @@ void *AR_Forward(__attribute__((unused)) void *arg)
 
                 for (unsigned int i = 0; i < keys.keysize; i++)
                 {
-                    if (keys.keyentries[i]->rcvd >= (time(0) - arr.global.agents_disconnection_time))
+                    if (keys.keyentries[i]->rcvd >= (time(0) - logr.global.agents_disconnection_time))
                     {
                         strncpy(agent_id, keys.keyentries[i]->id, KEYSIZE);
                         key_unlock();
