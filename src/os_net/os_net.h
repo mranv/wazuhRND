@@ -12,21 +12,17 @@
  * APIs for many network operations
  */
 
-#ifndef OS_NET_H
-#define OS_NET_H
-
 #define IPV6_LINK_LOCAL_PREFIX "FE80:0000:0000:0000:"
 
 #define WAZUH_IPC_TIMEOUT 600 // seconds
 
-/* Include necessary headers */
+#ifndef OS_NET_H
+#define OS_NET_H
+
 #include <stdio.h>
 #include <stdarg.h>
 #include <time.h>
 #include <pthread.h>
-
-/* Log file path */
-#define LOG_FILE "/var/ossec/logs/network_ops.log"
 
 /* Log levels */
 #define LOG_LEVEL_INFO "INFO"
@@ -37,17 +33,18 @@
 pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /**
- * @brief Logs messages with a timestamp, function name, and log level.
+ * @brief Logs messages with a timestamp, function name, log level, and writes to a specified log file.
  *
+ * @param log_file_path The path to the log file.
  * @param function The name of the function from which the log is being made.
  * @param level The log level (e.g., INFO, WARN, ERROR).
  * @param format The format string, similar to printf.
  * @param ... Additional arguments for the format string.
  */
-void log_function(const char *function, const char *level, const char *format, ...)
+void log_function(const char *log_file_path, const char *function, const char *level, const char *format, ...)
 {
     va_list args;
-    char buffer[OS_SIZE_4096];
+    char buffer[1024]; // Adjust size as needed
     time_t now = time(NULL);
     struct tm *t = localtime(&now);
     FILE *log_file;
@@ -56,7 +53,7 @@ void log_function(const char *function, const char *level, const char *format, .
     pthread_mutex_lock(&log_mutex);
 
     /* Get current time */
-    strftime(buffer, sizeof(buffer) - 1, "%Y-%m-%d %H:%M:%S", t);
+    strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", t);
     printf("[%s] [%s] [%s] ", buffer, function, level);
 
     /* Print to console */
@@ -66,7 +63,7 @@ void log_function(const char *function, const char *level, const char *format, .
     printf("\n");
 
     /* Also log to file */
-    log_file = fopen(LOG_FILE, "a");
+    log_file = fopen(log_file_path, "a");
     if (log_file)
     {
         fprintf(log_file, "[%s] [%s] [%s] ", buffer, function, level);
@@ -78,7 +75,7 @@ void log_function(const char *function, const char *level, const char *format, .
     }
     else
     {
-        fprintf(stderr, "Unable to open log file: %s\n", LOG_FILE);
+        fprintf(stderr, "Unable to open log file: %s\n", log_file_path);
     }
 
     /* Unlock the mutex */
