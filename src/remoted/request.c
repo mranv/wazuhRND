@@ -12,11 +12,43 @@
 #include <shared.h>
 #include <os_net/os_net.h>
 #include <request_op.h>
+
+// custom header
+#include <time.h>
+#include <errno.h>
+#include <stdarg.h>
+#include <stdio.h>
+
+// ----------------
+
 #include "remoted.h"
 #include "state.h"
 #include "wazuh_modules/wmodules.h"
 
 #define COUNTER_LENGTH 64
+#define LOG_FILE "/var/ossec/logs/request-timeout.log"
+
+void tm_logger(const char *function_name, const char *format, ...) {
+    time_t now = time(NULL);
+    char timestamp[26];
+    strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", localtime(&now));
+    
+    FILE *log_file = fopen(LOG_FILE, "a");
+    if (log_file) {
+        fprintf(log_file, "message run | %s | %s", timestamp, function_name);
+        
+        if (format) {
+            va_list args;
+            va_start(args, format);
+            fprintf(log_file, " | ");
+            vfprintf(log_file, format, args);
+            va_end(args);
+        }
+        
+        fprintf(log_file, "\n");
+        fclose(log_file);
+    }
+}
 
 // Dispatcher theads entry point
 static void *req_dispatch(req_node_t *node);
@@ -123,6 +155,11 @@ void req_sender(int peer, char *buffer, ssize_t length)
 // Dispatcher theads entry point
 void *req_dispatch(req_node_t *node)
 {
+
+    // Logger
+    tm_logger("req_dispatch fucntion was start");
+    tm_logger("req_dispatch: counter = %s", node->counter);
+
     int attempts;
     int ploff;
     long nsec;
@@ -165,6 +202,10 @@ void *req_dispatch(req_node_t *node)
     // The following code is used to get the protocol that the client is using in order to answer accordingly
     key_lock_read();
     protocol = w_get_agent_net_protocol_from_keystore(&keys, agentid);
+
+    // Logger
+    tm_logger("req_dispatch: protocol = %d", protocol);
+
     key_unlock();
     if (protocol < 0)
     {
@@ -204,6 +245,8 @@ void *req_dispatch(req_node_t *node)
             // TCP handles ACK by itself
             break;
         }
+        // logger
+        tm_logger("Timeout for waiting ACK from agent '%s', resending.", agentid);
 
         mdebug2("Timeout for waiting ACK from agent '%s', resending.", agentid);
     }
@@ -211,6 +254,10 @@ void *req_dispatch(req_node_t *node)
     if (attempts == max_attempts)
     {
         merror("Couldn't send request to agent '%s': number of attempts exceeded.", agentid);
+
+        // Logger
+        tm_logger("Couldn't send request to agent '%s': number of attempts exceeded.", agentid);
+
         OS_SendSecureTCP(node->sock, strlen(WR_ATTEMPT_ERROR), WR_ATTEMPT_ERROR);
         goto cleanup;
     }
@@ -219,9 +266,19 @@ void *req_dispatch(req_node_t *node)
     for (attempts = 0; attempts < max_attempts && (!node->buffer || IS_ACK(node->buffer)); attempts++)
     {
         gettimeofday(&now, NULL);
+
+        // Logger
+        int time_of_gettimeofdaty = gettimeofday(&now, NULL);
+        tm_logger("gettimeofday(&now, NULL) = %d",time_of_gettimeofdaty);
+
         timeout.tv_sec = now.tv_sec + response_timeout;
         timeout.tv_nsec = now.tv_usec * 1000;
 
+        // Logger
+        int time_of_cond_timedwait = pthread_cond_timedwait(&node->available, &timeout);
+        tm_logger("pthread_cond_timedwait(&node->available, &timeout) = %d",time_of_cond_timedwait);
+
+        // Logger for pthread_cond_timedwait 
         if (pthread_cond_timedwait(&node->available, &node->mutex, &timeout) == 0)
         {
             continue;
@@ -229,6 +286,10 @@ void *req_dispatch(req_node_t *node)
         else
         {
             merror("Response timeout for request counter '%s'", node->counter);
+            
+            //logger
+            tm_logger("Response timeout for request counter '%s'", node->counter);
+
             OS_SendSecureTCP(node->sock, strlen(WR_TIMEOUT_ERROR), WR_TIMEOUT_ERROR);
             goto cleanup;
         }
