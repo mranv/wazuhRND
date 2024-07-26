@@ -26,7 +26,7 @@
 #include <pthread.h>
 
 /* Log file path */
-#define CUSTOM_LOG_FILE "/var/ossec/logs/network_ops.log"
+#define LOG_FILE "/var/ossec/logs/network_ops.log"
 
 /* Log levels */
 #define LOG_LEVEL_INFO "INFO"
@@ -50,7 +50,7 @@ void log_function(const char *function, const char *level, const char *format, .
     char buffer[OS_SIZE_4096];
     time_t now = time(NULL);
     struct tm *t = localtime(&now);
-    FILE *CUSTOM_LOG_FILE;
+    FILE *log_file;
 
     /* Lock the mutex for thread-safe logging */
     pthread_mutex_lock(&log_mutex);
@@ -66,19 +66,19 @@ void log_function(const char *function, const char *level, const char *format, .
     printf("\n");
 
     /* Also log to file */
-    CUSTOM_LOG_FILE = fopen(CUSTOM_LOG_FILE, "a");
-    if (CUSTOM_LOG_FILE)
+    log_file = fopen(LOG_FILE, "a");
+    if (log_file)
     {
-        fprintf(CUSTOM_LOG_FILE, "[%s] [%s] [%s] ", buffer, function, level);
+        fprintf(log_file, "[%s] [%s] [%s] ", buffer, function, level);
         va_start(args, format);
-        vfprintf(CUSTOM_LOG_FILE, format, args);
+        vfprintf(log_file, format, args);
         va_end(args);
-        fprintf(CUSTOM_LOG_FILE, "\n");
-        fclose(CUSTOM_LOG_FILE);
+        fprintf(log_file, "\n");
+        fclose(log_file);
     }
     else
     {
-        fprintf(stderr, "Unable to open log file: %s\n", CUSTOM_LOG_FILE);
+        fprintf(stderr, "Unable to open log file: %s\n", LOG_FILE);
     }
 
     /* Unlock the mutex */
