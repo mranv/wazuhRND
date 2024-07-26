@@ -100,7 +100,7 @@ class WazuhSocket:
                 except TimeoutError:
                     # logger
                     socket_logger(f"Operation timed out after {wait_timeout} seconds.")
-                    raise WazuhException(1015, "Operation timed out")
+                    return b"err Response timeout"
                 except WazuhException as e:
                     # Re-raise WazuhException if needed
                     raise e
