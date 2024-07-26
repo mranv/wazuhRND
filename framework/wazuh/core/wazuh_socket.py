@@ -56,6 +56,7 @@ class WazuhSocket:
 
         try:
             sent = self.s.send(pack(header_format, len(msg_bytes)) + msg_bytes)
+            socket_logger(f"send the messg to the socket ----------------------{sent}")
             if sent == 0:
                 
                 # logger
@@ -102,7 +103,11 @@ class WazuhSocket:
                     # logger
                     socket_logger(f"Operation timed out after {wait_timeout} seconds.")
                     self.close()  # Close the connection
-                    return b"err Response timeout"
+                    try:
+                        return b"err Response timeout!"
+                    except Exception as e:
+                        socket_logger(f"not send the err Response timeout!{e}")
+                        raise WazuhException(1014, str(e))
                 except WazuhException as e:
                     # Re-raise WazuhException if needed
                     raise e
