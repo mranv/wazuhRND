@@ -19,9 +19,71 @@
 
 #define WAZUH_IPC_TIMEOUT 600 // seconds
 
+/* Include necessary headers */
+#include <stdio.h>
+#include <stdarg.h>
+#include <time.h>
+#include <pthread.h>
+
+/* Log file path */
 #define LOG_FILE "/var/ossec/logs/network_ops.log"
 
-void log_function(const char *function_name, const char *format, ...);
+/* Log levels */
+#define LOG_LEVEL_INFO "INFO"
+#define LOG_LEVEL_WARN "WARN"
+#define LOG_LEVEL_ERROR "ERROR"
+
+/* Mutex for thread-safe logging */
+pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+/**
+ * @brief Logs messages with a timestamp, function name, and log level.
+ *
+ * @param function The name of the function from which the log is being made.
+ * @param level The log level (e.g., INFO, WARN, ERROR).
+ * @param format The format string, similar to printf.
+ * @param ... Additional arguments for the format string.
+ */
+void log_function(const char *function, const char *level, const char *format, ...)
+{
+    va_list args;
+    char buffer[OS_SIZE_4096];
+    time_t now = time(NULL);
+    struct tm *t = localtime(&now);
+    FILE *log_file;
+
+    /* Lock the mutex for thread-safe logging */
+    pthread_mutex_lock(&log_mutex);
+
+    /* Get current time */
+    strftime(buffer, sizeof(buffer) - 1, "%Y-%m-%d %H:%M:%S", t);
+    printf("[%s] [%s] [%s] ", buffer, function, level);
+
+    /* Print to console */
+    va_start(args, format);
+    vprintf(format, args);
+    va_end(args);
+    printf("\n");
+
+    /* Also log to file */
+    log_file = fopen(LOG_FILE, "a");
+    if (log_file)
+    {
+        fprintf(log_file, "[%s] [%s] [%s] ", buffer, function, level);
+        va_start(args, format);
+        vfprintf(log_file, format, args);
+        va_end(args);
+        fprintf(log_file, "\n");
+        fclose(log_file);
+    }
+    else
+    {
+        fprintf(stderr, "Unable to open log file: %s\n", LOG_FILE);
+    }
+
+    /* Unlock the mutex */
+    pthread_mutex_unlock(&log_mutex);
+}
 
 /* OS_Bindport*
  * Bind a specific port (protocol and a ip).
