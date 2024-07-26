@@ -1263,7 +1263,7 @@ def get_active_configuration(agent_id: str, component: str, configuration: str) 
             # Applye the new solutio
             # -------------------------
             # Receive data length
-            rec_msg_ok, rec_msg = s.receive(header_format="<I", header_size=4,wait_timeout=1).decode().split(" ", 1)
+            rec_msg_ok, rec_msg = s.receive(wait_timeout=1).decode().split(" ", 1)
             
             # logger
             custom_logger(f"receive rec_msg_ok : {rec_msg_ok}, rec_msg {rec_msg}")
