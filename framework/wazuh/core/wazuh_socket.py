@@ -4,9 +4,9 @@
 import asyncio
 import os.path
 import socket
+import concurrent.futures
 from json import dumps, loads
 from struct import pack, unpack
-
 from wazuh import common
 from wazuh.core.exception import WazuhException, WazuhInternalError
 from wazuh.core.custom_logger import socket_logger
@@ -74,17 +74,46 @@ class WazuhSocket:
             
             raise WazuhException(1014, str(e))
 
-    def receive(self, header_format="<I", header_size=4):
+    def receive(self, header_format="<I", header_size=4, wait_timeout = None):
         
         # Logger
         socket_logger(f"receive (wazuh_socket) -->> header_format : {header_format}")
         
-        try:
-            size = unpack(header_format, self.s.recv(header_size, socket.MSG_WAITALL))[0]
+        def recv_data(size):
             return self.s.recv(size, socket.MSG_WAITALL)
-        except Exception as e:
-            raise WazuhException(1014, str(e))
+        
+        if wait_timeout is None:
+            try:
+                size = unpack(header_format, self.s.recv(header_size, socket.MSG_WAITALL))[0]
+                return self.s.recv(size, socket.MSG_WAITALL)
+            except Exception as e:
+                raise WazuhException(1014, str(e))
+        else:
+            try:
+                with concurrent.futures.ThreadPoolExecutor() as executor:
+                    # Receive header with timeout
+                    future_size = executor.submit(recv_data, self.s, header_size, socket.MSG_WAITALL)
+                    size_data = future_size.result(timeout=wait_timeout)
+                    if len(size_data) < header_size:
+                        raise WazuhException(1014, "Incomplete header received")
+                    size = unpack(header_format, size_data)[0]
 
+                    # Receive data with timeout
+                    future_data = executor.submit(recv_data, self.s, size, socket.MSG_WAITALL)
+                    data = future_data.result(timeout=wait_timeout)
+                    if len(data) < size:
+                        socket_logger(f"{WazuhException(1014)} Incomplete data received")
+                        raise WazuhException(1014, "Incomplete data received")
+                    return data
+            except concurrent.futures.TimeoutError:
+                
+                # Logger
+                socket_logger(f"Socket receive operation timed out ERROR :{WazuhException(1014)}")
+                
+                raise WazuhException(1014, "Socket receive operation timed out")
+            except Exception as e:
+                socket_logger(f"if get the any errori in the code {WazuhException(1014, str(e))}")
+                raise WazuhException(1014, str(e))
 
 class WazuhSocketJSON(WazuhSocket):
     MAX_SIZE = 65536

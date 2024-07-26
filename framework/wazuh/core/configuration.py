@@ -1226,7 +1226,7 @@ def get_active_configuration(agent_id: str, component: str, configuration: str) 
 
         # Socket connection
         try:
-            s = wazuh_socket.WazuhSocket(dest_socket)
+            s = wazuh_socket.WazuhSocket(path=dest_socket, timeout=1)
             
             # logger
             custom_logger(f"socket conneciton from acative configration : {s}")
@@ -1260,8 +1260,10 @@ def get_active_configuration(agent_id: str, component: str, configuration: str) 
 
         # Receive response
         try:
+            # Applye the new solutio
+            # -------------------------
             # Receive data length
-            rec_msg_ok, rec_msg = s.receive().decode().split(" ", 1)
+            rec_msg_ok, rec_msg = s.receive(wait_timeout=1).decode().split(" ", 1)
             
             # logger
             custom_logger(f"receive rec_msg_ok : {rec_msg_ok}, rec_msg {rec_msg}")
