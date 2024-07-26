@@ -98,7 +98,9 @@ class WazuhSocket:
             with ThreadPoolExecutor(max_workers=1) as executor:
                 future = executor.submit(_receive)
                 try:
-                    return future.result(timeout=wait_timeout)
+                    msg = future.result(timeout=wait_timeout)
+                    socket_logger(f"get AKG form AGENT --------------- {msg}")
+                    return msg
                 except TimeoutError:
                     # logger
                     socket_logger(f"Operation timed out after {wait_timeout} seconds.")
