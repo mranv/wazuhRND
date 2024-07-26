@@ -1,33 +1,23 @@
-#define IPV6_LINK_LOCAL_PREFIX "FE80:0000:0000:0000:"
+/* Copyright (C) 2015, Wazuh Inc.
+ * Copyright (C) 2009 Trend Micro Inc.
+ * All rights reserved.
+ *
+ * This program is free software; you can redistribute it
+ * and/or modify it under the terms of the GNU General Public
+ * License (version 2) as published by the FSF - Free Software
+ * Foundation
+ */
 
-#define WAZUH_IPC_TIMEOUT 600 // seconds
+/* OS_net Library
+ * APIs for many network operations
+ */
 
 #ifndef OS_NET_H
 #define OS_NET_H
 
-#include <stdio.h>
-#include <stdarg.h>
-#include <time.h>
-#include <pthread.h>
+#define IPV6_LINK_LOCAL_PREFIX "FE80:0000:0000:0000:"
 
-/* Log levels */
-#define LOG_LEVEL_INFO "INFO"
-#define LOG_LEVEL_WARN "WARN"
-#define LOG_LEVEL_ERROR "ERROR"
-
-/* Mutex for thread-safe logging */
-extern pthread_mutex_t log_mutex;
-
-/**
- * @brief Logs messages with a timestamp, function name, log level, and writes to a specified log file.
- *
- * @param log_file_path The path to the log file.
- * @param function The name of the function from which the log is being made.
- * @param level The log level (e.g., INFO, WARN, ERROR).
- * @param format The format string, similar to printf.
- * @param ... Additional arguments for the format string.
- */
-void log_function(const char *log_file_path, const char *function, const char *level, const char *format, ...);
+#define WAZUH_IPC_TIMEOUT 600 // seconds
 
 /* OS_Bindport*
  * Bind a specific port (protocol and a ip).

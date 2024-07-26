@@ -1,21 +1,23 @@
+/* Copyright (C) 2015, Wazuh Inc.
+ * Copyright (C) 2009 Trend Micro Inc.
+ * All right reserved.
+ *
+ * This program is free software; you can redistribute it
+ * and/or modify it under the terms of the GNU General Public
+ * License (version 2) as published by the FSF - Free Software
+ * Foundation
+ */
+
 #include <pthread.h>
-#include <string.h>
-#include <errno.h>
-#include <stdio.h> // Include for log_function
+
 #include "shared.h"
 #include "remoted.h"
 #include "state.h"
 #include "os_net/os_net.h"
-#include "wazuh_modules/wmodules.h"
-
-// Define the path to the log file for this component
-#define AR_FORWARD_LOG_PATH "/var/ossec/logs/ar_forward.log"
 
 /* Start of a new thread. Only returns on unrecoverable errors. */
 void *AR_Forward(__attribute__((unused)) void *arg)
 {
-    log_function(AR_FORWARD_LOG_PATH, __func__, LOG_LEVEL_INFO, "Starting thread.");
-
     int arq = 0;
     int ar_location = 0;
     const char *path = ARQUEUE;
@@ -26,23 +28,19 @@ void *AR_Forward(__attribute__((unused)) void *arg)
     char *ar_agent_id = NULL;
     char *tmp_str = NULL;
 
-    log_function(AR_FORWARD_LOG_PATH, __func__, LOG_LEVEL_INFO, "Creating the unix queue with path: %s", path);
-
     /* Create the unix queue */
     if ((arq = StartMQ(path, READ, 0)) < 0)
     {
-        log_function(AR_FORWARD_LOG_PATH, __func__, LOG_LEVEL_ERROR, "Failed to start message queue. Error: %s", strerror(errno));
         merror_exit(QUEUE_ERROR, path, strerror(errno));
     }
-
-    log_function(AR_FORWARD_LOG_PATH, __func__, LOG_LEVEL_INFO, "Message queue started successfully.");
 
     /* Daemon loop */
     while (1)
     {
         if (OS_RecvUnix(arq, OS_MAXSTR - 1, msg))
         {
-            log_function(AR_FORWARD_LOG_PATH, __func__, LOG_LEVEL_INFO, "Active response request received: %s", msg);
+
+            mdebug2("Active response request received: %s", msg);
 
             /* Always zero the location */
             ar_location = 0;
@@ -51,7 +49,6 @@ void *AR_Forward(__attribute__((unused)) void *arg)
             tmp_str = strchr(msg, ')');
             if (!tmp_str)
             {
-                log_function(AR_FORWARD_LOG_PATH, __func__, LOG_LEVEL_WARN, "Invalid message format: %s", msg);
                 mwarn(EXECD_INV_MSG, msg);
                 continue;
             }
@@ -61,7 +58,6 @@ void *AR_Forward(__attribute__((unused)) void *arg)
             tmp_str = strchr(tmp_str, ']');
             if (!tmp_str)
             {
-                log_function(AR_FORWARD_LOG_PATH, __func__, LOG_LEVEL_WARN, "Invalid message format: %s", msg);
                 mwarn(EXECD_INV_MSG, msg);
                 continue;
             }
@@ -93,7 +89,6 @@ void *AR_Forward(__attribute__((unused)) void *arg)
             tmp_str = strchr(tmp_str, ' ');
             if (!tmp_str)
             {
-                log_function(AR_FORWARD_LOG_PATH, __func__, LOG_LEVEL_WARN, "Invalid message format: %s", msg);
                 mwarn(EXECD_INV_MSG, msg);
                 continue;
             }
@@ -115,7 +110,7 @@ void *AR_Forward(__attribute__((unused)) void *arg)
                          tmp_str);
             }
 
-            log_function(AR_FORWARD_LOG_PATH, __func__, LOG_LEVEL_INFO, "Active response sent: %s", msg_to_send);
+            mdebug2("Active response sent: %s", msg_to_send);
 
             /* Send to ALL agents */
             if (ar_location & ALL_AGENTS)
@@ -152,7 +147,4 @@ void *AR_Forward(__attribute__((unused)) void *arg)
             }
         }
     }
-
-    log_function(AR_FORWARD_LOG_PATH, __func__, LOG_LEVEL_INFO, "Thread exiting.");
-    return NULL;
 }
