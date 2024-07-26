@@ -1226,7 +1226,7 @@ def get_active_configuration(agent_id: str, component: str, configuration: str) 
 
         # Socket connection
         try:
-            s = wazuh_socket.WazuhSocket(path=dest_socket, timeout=1)
+            s = wazuh_socket.WazuhSocket(dest_socket)
             
             # logger
             custom_logger(f"socket conneciton from acative configration : {s}")
