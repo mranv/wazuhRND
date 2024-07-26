@@ -9,11 +9,70 @@
  */
 
 #include <pthread.h>
+#include <stdio.h>
+#include <time.h>
 
 #include "shared.h"
 #include "remoted.h"
 #include "state.h"
 #include "os_net/os_net.h"
+
+#define ARAR_F "/var/ossec/logs/arforwarder.log"
+
+// Custom logger function
+void ar_message(const char *level, const char *message)
+{
+    char timestamp[128];
+    struct tm *local_time;
+    time_t t;
+
+    t = time(NULL);
+    local_time = localtime(&t);
+    strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", local_time);
+
+    FILE *log_file = fopen(ARAR_F, "a");
+    if (log_file)
+    {
+        fprintf(log_file, "[%s] %s: %s\n", timestamp, level, message);
+        fclose(log_file);
+    }
+    else
+    {
+        fprintf(stderr, "Error opening log file: %s\n", ARAR_F);
+    }
+}
+
+#define AR_DEBUG(msg, ...)                                            \
+    do                                                                \
+    {                                                                 \
+        char log_buffer[OS_MAXSTR];                                   \
+        snprintf(log_buffer, sizeof(log_buffer), msg, ##__VA_ARGS__); \
+        ar_message("DEBUG", log_buffer);                              \
+    } while (0)
+
+#define AR_INFO(msg, ...)                                             \
+    do                                                                \
+    {                                                                 \
+        char log_buffer[OS_MAXSTR];                                   \
+        snprintf(log_buffer, sizeof(log_buffer), msg, ##__VA_ARGS__); \
+        ar_message("INFO", log_buffer);                               \
+    } while (0)
+
+#define AR_WARN(msg, ...)                                             \
+    do                                                                \
+    {                                                                 \
+        char log_buffer[OS_MAXSTR];                                   \
+        snprintf(log_buffer, sizeof(log_buffer), msg, ##__VA_ARGS__); \
+        ar_message("WARN", log_buffer);                               \
+    } while (0)
+
+#define AR_ERROR(msg, ...)                                            \
+    do                                                                \
+    {                                                                 \
+        char log_buffer[OS_MAXSTR];                                   \
+        snprintf(log_buffer, sizeof(log_buffer), msg, ##__VA_ARGS__); \
+        ar_message("ERROR", log_buffer);                              \
+    } while (0)
 
 /* Start of a new thread. Only returns on unrecoverable errors. */
 void *AR_Forward(__attribute__((unused)) void *arg)
@@ -28,19 +87,23 @@ void *AR_Forward(__attribute__((unused)) void *arg)
     char *ar_agent_id = NULL;
     char *tmp_str = NULL;
 
+    AR_INFO("Starting AR_Forward thread");
+
     /* Create the unix queue */
     if ((arq = StartMQ(path, READ, 0)) < 0)
     {
+        AR_ERROR("Could not start queue: %s", strerror(errno));
         merror_exit(QUEUE_ERROR, path, strerror(errno));
     }
+
+    AR_INFO("Unix queue created successfully");
 
     /* Daemon loop */
     while (1)
     {
         if (OS_RecvUnix(arq, OS_MAXSTR - 1, msg))
         {
-
-            mdebug2("Active response request received: %s", msg);
+            AR_DEBUG("Active response request received: %s", msg);
 
             /* Always zero the location */
             ar_location = 0;
@@ -49,6 +112,7 @@ void *AR_Forward(__attribute__((unused)) void *arg)
             tmp_str = strchr(msg, ')');
             if (!tmp_str)
             {
+                AR_WARN("Invalid message received: %s", msg);
                 mwarn(EXECD_INV_MSG, msg);
                 continue;
             }
@@ -58,6 +122,7 @@ void *AR_Forward(__attribute__((unused)) void *arg)
             tmp_str = strchr(tmp_str, ']');
             if (!tmp_str)
             {
+                AR_WARN("Invalid message received: %s", msg);
                 mwarn(EXECD_INV_MSG, msg);
                 continue;
             }
@@ -89,6 +154,7 @@ void *AR_Forward(__attribute__((unused)) void *arg)
             tmp_str = strchr(tmp_str, ' ');
             if (!tmp_str)
             {
+                AR_WARN("Invalid message received: %s", msg);
                 mwarn(EXECD_INV_MSG, msg);
                 continue;
             }
@@ -110,7 +176,7 @@ void *AR_Forward(__attribute__((unused)) void *arg)
                          tmp_str);
             }
 
-            mdebug2("Active response sent: %s", msg_to_send);
+            AR_DEBUG("Active response prepared: %s", msg_to_send);
 
             /* Send to ALL agents */
             if (ar_location & ALL_AGENTS)
@@ -129,6 +195,11 @@ void *AR_Forward(__attribute__((unused)) void *arg)
                         if (send_msg(agent_id, msg_to_send, -1) >= 0)
                         {
                             rem_inc_send_ar(agent_id);
+                            AR_INFO("Active response sent to agent: %s", agent_id);
+                        }
+                        else
+                        {
+                            AR_WARN("Failed to send active response to agent: %s", agent_id);
                         }
                         key_lock_read();
                     }
@@ -143,6 +214,11 @@ void *AR_Forward(__attribute__((unused)) void *arg)
                 if (send_msg(ar_agent_id, msg_to_send, -1) >= 0)
                 {
                     rem_inc_send_ar(ar_agent_id);
+                    AR_INFO("Active response sent to agent: %s", ar_agent_id);
+                }
+                else
+                {
+                    AR_WARN("Failed to send active response to agent: %s", ar_agent_id);
                 }
             }
         }
