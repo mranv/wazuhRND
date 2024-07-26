@@ -42,7 +42,7 @@ pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
  * @param format The format string, similar to printf.
  * @param ... Additional arguments for the format string.
  */
-void log_function(const char *log_file_path, const char *function, const char *level, const char *format, ...)
+void log_functionction(const char *log_file_path, const char *function, const char *level, const char *format, ...)
 {
     va_list args;
     char buffer[1024]; // Adjust size as needed
@@ -109,7 +109,7 @@ static int OS_Connect(u_int16_t _port, unsigned int protocol, const char *_ip, i
 /* Bind a specific port */
 static int OS_Bindport(u_int16_t _port, unsigned int _proto, const char *_ip, int ipv6)
 {
-    log_fun("OS_Bindport", "port: %u, proto: %u, ip: %s, ipv6: %d", _port, _proto, _ip ? _ip : "NULL", ipv6);
+    log_function("OS_Bindport", "port: %u, proto: %u, ip: %s, ipv6: %d", _port, _proto, _ip ? _ip : "NULL", ipv6);
     int ossock;
     struct sockaddr_in server;
     struct sockaddr_in6 server6;
@@ -200,14 +200,14 @@ static int OS_Bindport(u_int16_t _port, unsigned int _proto, const char *_ip, in
 /* Bind a TCP port, using the OS_Bindport */
 int OS_Bindporttcp(u_int16_t _port, const char *_ip, int ipv6)
 {
-    log_fun("OS_Bindporttcp", "port: %u, ip: %s, ipv6: %d", _port, _ip ? _ip : "NULL", ipv6);
+    log_function("OS_Bindporttcp", "port: %u, ip: %s, ipv6: %d", _port, _ip ? _ip : "NULL", ipv6);
     return (OS_Bindport(_port, IPPROTO_TCP, _ip, ipv6));
 }
 
 /* Bind a UDP port, using the OS_Bindport */
 int OS_Bindportudp(u_int16_t _port, const char *_ip, int ipv6)
 {
-    log_fun("OS_Bindportudp", NULL);
+    log_function("OS_Bindportudp", NULL);
     return (OS_Bindport(_port, IPPROTO_UDP, _ip, ipv6));
 }
 
@@ -215,7 +215,7 @@ int OS_Bindportudp(u_int16_t _port, const char *_ip, int ipv6)
 /* Bind to a Unix domain, DGRAM sockets while allowing the caller to specify owner and permission bits. */
 int OS_BindUnixDomainWithPerms(const char *path, int type, int max_msg_size, uid_t uid, gid_t gid, mode_t mode)
 {
-    log_fun("OS_BindUnixDomainWithPerms", NULL);
+    log_function("OS_BindUnixDomainWithPerms", NULL);
     struct sockaddr_un n_us;
     int ossock = 0;
 
@@ -276,7 +276,7 @@ int OS_BindUnixDomainWithPerms(const char *path, int type, int max_msg_size, uid
 /* Bind to a Unix domain, using DGRAM sockets */
 int OS_BindUnixDomain(const char *path, int type, int max_msg_size)
 {
-    log_fun("OS_BindUnixDomain", NULL);
+    log_function("OS_BindUnixDomain", NULL);
     return OS_BindUnixDomainWithPerms(path, type, max_msg_size, getuid(), getgid(), 0660);
 }
 
@@ -285,7 +285,7 @@ int OS_BindUnixDomain(const char *path, int type, int max_msg_size)
  */
 int OS_ConnectUnixDomain(const char *path, int type, int max_msg_size)
 {
-    log_fun("OS_ConnectUnixDomain", NULL);
+    log_function("OS_ConnectUnixDomain", NULL);
     struct sockaddr_un n_us;
 
     int ossock = 0;
@@ -327,7 +327,7 @@ int OS_ConnectUnixDomain(const char *path, int type, int max_msg_size)
 
 int OS_getsocketsize(int ossock)
 {
-    log_fun("OS_getsocketsize", NULL);
+    log_function("OS_getsocketsize", NULL);
     int len = 0;
     socklen_t optlen = sizeof(len);
 
@@ -345,7 +345,7 @@ int OS_getsocketsize(int ossock)
 /* Open a TCP/UDP client socket */
 static int OS_Connect(u_int16_t _port, unsigned int protocol, const char *_ip, int ipv6, uint32_t network_interface)
 {
-    log_fun("OS_Connect", NULL);
+    log_function("OS_Connect", NULL);
     int ossock;
     int max_msg_size = OS_MAXSTR + 512;
     struct sockaddr_in server;
@@ -441,14 +441,14 @@ static int OS_Connect(u_int16_t _port, unsigned int protocol, const char *_ip, i
 int OS_ConnectTCP(u_int16_t _port, const char *_ip, int ipv6, uint32_t network_interface)
 {
     int result = OS_Connect(_port, IPPROTO_TCP, _ip, ipv6, network_interface);
-    log_fun("OS_ConnectTCP", "Result: %d", result);
+    log_function("OS_ConnectTCP", "Result: %d", result);
     return result;
 }
 
 /* Open a UDP socket */
 int OS_ConnectUDP(u_int16_t _port, const char *_ip, int ipv6, uint32_t network_interface)
 {
-    log_fun("OS_ConnectUDP", NULL);
+    log_function("OS_ConnectUDP", NULL);
     int sock = OS_Connect(_port, IPPROTO_UDP, _ip, ipv6, network_interface);
 
 #ifdef HPUX
@@ -467,7 +467,7 @@ int OS_ConnectUDP(u_int16_t _port, const char *_ip, int ipv6, uint32_t network_i
 int OS_SendTCP(int socket, const char *msg)
 {
     size_t msg_length = strlen(msg);
-    log_fun("OS_SendTCP", "socket: %d, msg length: %zu", socket, msg_length);
+    log_function("OS_SendTCP", "socket: %d, msg length: %zu", socket, msg_length);
     if ((send(socket, msg, msg_length, 0)) <= 0)
     {
         return (OS_SOCKTERR);
@@ -479,7 +479,7 @@ int OS_SendTCP(int socket, const char *msg)
 /* Send a TCP packet of a specific size (through a open socket) */
 int OS_SendTCPbySize(int socket, int size, const char *msg)
 {
-    log_fun("OS_SendTCPbySize", "socket: %d, msg length: %d", socket, size);
+    log_function("OS_SendTCPbySize", "socket: %d, msg length: %d", socket, size);
     if ((send(socket, msg, size, 0)) < size)
     {
         return (OS_SOCKTERR);
@@ -491,7 +491,7 @@ int OS_SendTCPbySize(int socket, int size, const char *msg)
 /* Send a UDP packet of a specific size (through an open socket) */
 int OS_SendUDPbySize(int socket, int size, const char *msg)
 {
-    log_fun("OS_SendUDPbySize", "socket: %d, msg length: %d", socket, size);
+    log_function("OS_SendUDPbySize", "socket: %d, msg length: %d", socket, size);
     unsigned int i = 0;
 
     while ((send(socket, msg, size, 0)) < 0)
@@ -512,7 +512,7 @@ int OS_SendUDPbySize(int socket, int size, const char *msg)
 /* Accept a TCP connection */
 int OS_AcceptTCP(int socket, char *srcip, size_t addrsize)
 {
-    log_fun("OS_AcceptTCP", NULL);
+    log_function("OS_AcceptTCP", NULL);
     int clientsocket;
     struct sockaddr_storage _nc;
     socklen_t _ncl;
@@ -550,21 +550,21 @@ char *OS_RecvTCP(int socket, int sizet)
     ret = (char *)calloc((sizet), sizeof(char));
     if (ret == NULL)
     {
-        log_fun("OS_RecvTCP", "Result: NULL (memory allocation failed)");
+        log_function("OS_RecvTCP", "Result: NULL (memory allocation failed)");
         return NULL;
     }
 
     int recv_size = recv(socket, ret, sizet - 1, 0);
-    log_fun("OS_RecvTCP", "socket: %d, received length: %d", socket, recv_size);
+    log_function("OS_RecvTCP", "socket: %d, received length: %d", socket, recv_size);
 
     if (recv_size <= 0)
     {
         free(ret);
-        log_fun("OS_RecvTCP", "Result: NULL (recv failed or connection closed)");
+        log_function("OS_RecvTCP", "Result: NULL (recv failed or connection closed)");
         return NULL;
     }
 
-    log_fun("OS_RecvTCP", "Result: Success, received %d bytes", recv_size);
+    log_function("OS_RecvTCP", "Result: Success, received %d bytes", recv_size);
     return ret;
 }
 
@@ -579,7 +579,7 @@ int OS_RecvTCPBuffer(int socket, char *buffer, int sizet)
     {
         buffer[retsize] = '\0';
     }
-    log_fun("OS_RecvTCPBuffer", "socket: %d, received length: %d", socket, retsize);
+    log_function("OS_RecvTCPBuffer", "socket: %d, received length: %d", socket, retsize);
     return (retsize);
 }
 
@@ -596,7 +596,7 @@ char *OS_RecvUDP(int socket, int sizet)
     }
 
     recv_b = recv(socket, ret, sizet - 1, 0);
-    log_fun("OS_RecvUDP", "socket: %d, received length: %d", socket, recv_b);
+    log_function("OS_RecvUDP", "socket: %d, received length: %d", socket, recv_b);
 
     if (recv_b < 0)
     {
@@ -615,7 +615,7 @@ int OS_RecvConnUDP(int socket, char *buffer, int buffer_size)
     buffer[buffer_size] = '\0';
 
     recv_b = recv(socket, buffer, buffer_size, 0);
-    log_fun("OS_RecvConnUDP", "socket: %d, received length: %d", socket, recv_b);
+    log_function("OS_RecvConnUDP", "socket: %d, received length: %d", socket, recv_b);
 
     if (recv_b < 0)
     {
@@ -643,7 +643,7 @@ int OS_RecvUnix(int socket, int sizet, char *ret)
     }
 
     ret[recvd] = '\0';
-    log_fun("OS_RecvUnix", "socket: %d, received length: %zd", socket, recvd);
+    log_function("OS_RecvUnix", "socket: %d, received length: %zd", socket, recvd);
     return ((int)recvd);
 }
 
@@ -658,11 +658,11 @@ int OS_SendUnix(int socket, const char *msg, int size)
         size = strlen(msg) + 1;
     }
 
-    log_fun("OS_SendUnix", "socket: %d, msg length: %d", socket, size);
+    log_function("OS_SendUnix", "socket: %d, msg length: %d", socket, size);
 
     int sentBytes = send(socket, msg, size, 0);
 
-    log_fun("OS_SendUnix", "socket: %d, msg length: %d, sent bytes: %d, errno: %d", socket, size, sentBytes, errno);
+    log_function("OS_SendUnix", "socket: %d, msg length: %d, sent bytes: %d, errno: %d", socket, size, sentBytes, errno);
 
     // Check sent bytes with size to be sent
     if (sentBytes < size)
@@ -686,7 +686,7 @@ int OS_SendUnix(int socket, const char *msg, int size)
  */
 char *OS_GetHost(const char *host, unsigned int attempts)
 {
-    log_fun("OS_GetHost", NULL);
+    log_function("OS_GetHost", NULL);
     unsigned int i = 0;
     int status = 0;
     char *ip = NULL;
@@ -732,7 +732,7 @@ char *OS_GetHost(const char *host, unsigned int attempts)
 
 int OS_CloseSocket(int socket)
 {
-    log_fun("OS_CloseSocket", NULL);
+    log_function("OS_CloseSocket", NULL);
 #ifdef WIN32
     return (closesocket(socket));
 #else
@@ -742,7 +742,7 @@ int OS_CloseSocket(int socket)
 
 int OS_SetKeepalive(int socket)
 {
-    log_fun("OS_SetKeepalive", NULL);
+    log_function("OS_SetKeepalive", NULL);
     int keepalive = 1;
     return setsockopt(socket, SOL_SOCKET, SO_KEEPALIVE, (void *)&keepalive, sizeof(keepalive));
 }
@@ -750,7 +750,7 @@ int OS_SetKeepalive(int socket)
 // Set keepalive parameters for a socket
 void OS_SetKeepalive_Options(__attribute__((unused)) int socket, int idle, int intvl, int cnt)
 {
-    log_fun("OS_SetKeepalive_Options", NULL);
+    log_function("OS_SetKeepalive_Options", NULL);
     if (cnt > 0)
     {
 #if !defined(sun) && !defined(WIN32) && !defined(OpenBSD)
@@ -812,7 +812,7 @@ void OS_SetKeepalive_Options(__attribute__((unused)) int socket, int idle, int i
 
 int OS_SetRecvTimeout(int socket, long seconds, long useconds)
 {
-    log_fun("OS_SetRecvTimeout", NULL);
+    log_function("OS_SetRecvTimeout", NULL);
 #ifdef WIN32
     DWORD ms = seconds * 1000 + useconds / 1000;
     return setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, (const void *)&ms, sizeof(ms));
@@ -824,7 +824,7 @@ int OS_SetRecvTimeout(int socket, long seconds, long useconds)
 
 int OS_SetSendTimeout(int socket, int seconds)
 {
-    log_fun("OS_SetSendTimeout", NULL);
+    log_function("OS_SetSendTimeout", NULL);
 #ifdef WIN32
     DWORD ms = seconds * 1000;
     return setsockopt(socket, SOL_SOCKET, SO_SNDTIMEO, (const void *)&ms, sizeof(ms));
@@ -838,14 +838,14 @@ int OS_SetSendTimeout(int socket, int seconds)
 
 int OS_SendSecureTCP(int sock, uint32_t size, const void *msg)
 {
-    log_fun("OS_SendSecureTCP", "socket: %d, msg length: %u", sock, size);
+    log_function("OS_SendSecureTCP", "socket: %d, msg length: %u", sock, size);
     int retval = OS_SOCKTERR;
     void *buffer = NULL;
     size_t bufsz = size + sizeof(uint32_t);
 
     if (sock < 0)
     {
-        log_fun("OS_SendSecureTCP", "Result: %d (Invalid socket)", retval);
+        log_function("OS_SendSecureTCP", "Result: %d (Invalid socket)", retval);
         return retval;
     }
 
@@ -857,11 +857,11 @@ int OS_SendSecureTCP(int sock, uint32_t size, const void *msg)
 
     if (retval == OS_SOCKTERR)
     {
-        log_fun("OS_SendSecureTCP", "Result: %d (Send failed, errno: %d)", retval, errno);
+        log_function("OS_SendSecureTCP", "Result: %d (Send failed, errno: %d)", retval, errno);
     }
     else
     {
-        log_fun("OS_SendSecureTCP", "Result: %d (Success)", retval);
+        log_function("OS_SendSecureTCP", "Result: %d (Success)", retval);
     }
 
     free(buffer);
@@ -908,7 +908,7 @@ int OS_RecvSecureTCP(int sock, char *ret, uint32_t size)
         ret[msgsize] = '\0';
     }
 
-    log_fun("OS_RecvSecureTCP", "socket: %d, received length: %zd", sock, recvb);
+    log_function("OS_RecvSecureTCP", "socket: %d, received length: %zd", sock, recvb);
     return recvb;
 }
 
@@ -916,7 +916,7 @@ int OS_RecvSecureTCP(int sock, char *ret, uint32_t size)
 
 uint32_t wnet_order(uint32_t value)
 {
-    log_fun("wnet_order", NULL);
+    log_function("wnet_order", NULL);
 #if defined(__sparc__) || defined(__BIG_ENDIAN__) || (defined(__BYTE_ORDER__) && defined(__ORDER_BIG_ENDIAN__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__) || defined(OS_BIG_ENDIAN)
     return (value >> 24) | (value << 24) | ((value & 0xFF0000) >> 8) | ((value & 0xFF00) << 8);
 #else
@@ -926,7 +926,7 @@ uint32_t wnet_order(uint32_t value)
 
 uint32_t wnet_order_big(uint32_t value)
 {
-    log_fun("wnet_order_big", NULL);
+    log_function("wnet_order_big", NULL);
 #if defined(__sparc__) || defined(__BIG_ENDIAN__) || (defined(__BYTE_ORDER__) && defined(__ORDER_BIG_ENDIAN__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__) || defined(OS_BIG_ENDIAN)
     return value;
 #else
@@ -937,7 +937,7 @@ uint32_t wnet_order_big(uint32_t value)
 /* Set the maximum buffer size for the socket */
 int OS_SetSocketSize(int sock, int mode, int max_msg_size)
 {
-    log_fun("OS_SetSocketSize", "sock: %d, mode: %d, max_msg_size: %d", sock, mode, max_msg_size);
+    log_function("OS_SetSocketSize", "sock: %d, mode: %d, max_msg_size: %d", sock, mode, max_msg_size);
     int len;
     socklen_t optlen = sizeof(len);
 
@@ -955,7 +955,7 @@ int OS_SetSocketSize(int sock, int mode, int max_msg_size)
             len = max_msg_size;
             if (setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (const void *)&len, optlen) < 0)
             {
-                log_fun("OS_SetSocketSize", "Result: -1 (setsockopt failed for RECV_SOCK)");
+                log_function("OS_SetSocketSize", "Result: -1 (setsockopt failed for RECV_SOCK)");
                 return -1;
             }
         }
@@ -974,20 +974,20 @@ int OS_SetSocketSize(int sock, int mode, int max_msg_size)
             len = max_msg_size;
             if (setsockopt(sock, SOL_SOCKET, SO_SNDBUF, (const void *)&len, optlen) < 0)
             {
-                log_fun("OS_SetSocketSize", "Result: -1 (setsockopt failed for SEND_SOCK)");
+                log_function("OS_SetSocketSize", "Result: -1 (setsockopt failed for SEND_SOCK)");
                 return -1;
             }
         }
     }
 
-    log_fun("OS_SetSocketSize", "Result: 0 (Success)");
+    log_function("OS_SetSocketSize", "Result: 0 (Success)");
     return 0;
 }
 
 /* Send secure TCP Cluster message */
 int OS_SendSecureTCPCluster(int sock, const void *command, const void *payload, size_t length)
 {
-    log_fun("OS_SendSecureTCPCluster", "socket: %d, command length: %zu, payload length: %zu", sock, strlen(command), length);
+    log_function("OS_SendSecureTCPCluster", "socket: %d, command length: %zu, payload length: %zu", sock, strlen(command), length);
     const unsigned COMMAND_SIZE = 12;
     const unsigned HEADER_SIZE = 8;
     const unsigned MAX_PAYLOAD_SIZE = 1000000;
@@ -1068,7 +1068,7 @@ int OS_RecvSecureClusterTCP(int sock, char *ret, size_t length)
     /* Read the payload */
     int recv_size = os_recv_waitall(sock, ret, size);
 
-    log_fun("OS_RecvSecureClusterTCP", "socket: %d, received length: %d", sock, recv_size);
+    log_function("OS_RecvSecureClusterTCP", "socket: %d, received length: %d", sock, recv_size);
 
     if (strncmp(buffer + 8, "err --------", CMD_SIZE) == 0)
     {
@@ -1098,14 +1098,14 @@ ssize_t os_recv_waitall(int sock, void *buf, size_t size)
         }
     }
 
-    log_fun("os_recv_waitall", "socket: %d, received length: %zu", sock, offset);
+    log_function("os_recv_waitall", "socket: %d, received length: %zu", sock, offset);
     return offset;
 }
 
 // Wrapper for select()
 int wnet_select(int sock, int timeout)
 {
-    log_fun("wnet_select", NULL);
+    log_function("wnet_select", NULL);
     fd_set fdset;
     struct timeval fdtimeout = {timeout, 0};
 
@@ -1117,7 +1117,7 @@ int wnet_select(int sock, int timeout)
 
 void resolve_hostname(char **hostname, int attempts)
 {
-    log_fun("resolve_hostname", NULL);
+    log_function("resolve_hostname", NULL);
     char *tmp_str;
     char *f_ip;
 
@@ -1151,7 +1151,7 @@ void resolve_hostname(char **hostname, int attempts)
 
 const char *get_ip_from_resolved_hostname(const char *resolved_hostname)
 {
-    log_fun("get_ip_from_resolved_hostname", NULL);
+    log_function("get_ip_from_resolved_hostname", NULL);
     char *tmp_str;
     assert(resolved_hostname != NULL);
 
@@ -1163,7 +1163,7 @@ const char *get_ip_from_resolved_hostname(const char *resolved_hostname)
 
 int external_socket_connect(char *socket_path, int response_timeout)
 {
-    log_fun("external_socket_connect", NULL);
+    log_function("external_socket_connect", NULL);
 #ifndef WIN32
     int sock = OS_ConnectUnixDomain(socket_path, SOCK_STREAM, OS_MAXSTR);
 
@@ -1192,7 +1192,7 @@ int external_socket_connect(char *socket_path, int response_timeout)
 
 int get_ipv4_numeric(const char *address, struct in_addr *addr)
 {
-    log_fun("get_ipv4_numeric", NULL);
+    log_function("get_ipv4_numeric", NULL);
     int ret = OS_INVALID;
 
 #ifdef WIN32
@@ -1232,7 +1232,7 @@ int get_ipv4_numeric(const char *address, struct in_addr *addr)
 
 int get_ipv6_numeric(const char *address, struct in6_addr *addr6)
 {
-    log_fun("get_ipv6_numeric", NULL);
+    log_function("get_ipv6_numeric", NULL);
     int ret = OS_INVALID;
 
 #ifdef WIN32
@@ -1269,7 +1269,7 @@ int get_ipv6_numeric(const char *address, struct in6_addr *addr6)
 
 int get_ipv4_string(struct in_addr addr, char *address, size_t address_size)
 {
-    log_fun("get_ipv4_string", NULL);
+    log_function("get_ipv4_string", NULL);
     int ret = OS_INVALID;
 
 #ifdef WIN32
@@ -1311,7 +1311,7 @@ int get_ipv4_string(struct in_addr addr, char *address, size_t address_size)
 
 int get_ipv6_string(struct in6_addr addr6, char *address, size_t address_size)
 {
-    log_fun("get_ipv6_string", NULL);
+    log_function("get_ipv6_string", NULL);
     int ret = OS_INVALID;
 
 #ifdef WIN32
