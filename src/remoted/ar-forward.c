@@ -19,8 +19,8 @@
 
 #define AR_FILE "/var/ossec/logs/arforwarder.log"
 
-// Custom logger function
-void log_message(const char *level, const char *message)
+// Custom arger function
+void ar_message(const char *level, const char *message)
 {
     char timestamp[128];
     struct tm *local_time;
@@ -30,48 +30,48 @@ void log_message(const char *level, const char *message)
     local_time = localtime(&t);
     strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", local_time);
 
-    FILE *log_file = fopen(AR_FILE, "a");
-    if (log_file)
+    FILE *ar_file = fopen(AR_FILE, "a");
+    if (ar_file)
     {
-        fprintf(log_file, "[%s] %s: %s\n", timestamp, level, message);
-        fclose(log_file);
+        fprintf(ar_file, "[%s] %s: %s\n", timestamp, level, message);
+        fclose(ar_file);
     }
     else
     {
-        fprintf(stderr, "Error opening log file: %s\n", AR_FILE);
+        fprintf(stderr, "Error opening ar file: %s\n", AR_FILE);
     }
 }
 
-#define AR_DEBUG(msg, ...)                                            \
-    do                                                                \
-    {                                                                 \
-        char log_buffer[OS_MAXSTR];                                   \
-        snprintf(log_buffer, sizeof(log_buffer), msg, ##__VA_ARGS__); \
-        log_message("DEBUG", log_buffer);                             \
+#define AR_DEBUG(msg, ...)                                          \
+    do                                                              \
+    {                                                               \
+        char ar_buffer[OS_MAXSTR];                                  \
+        snprintf(ar_buffer, sizeof(ar_buffer), msg, ##__VA_ARGS__); \
+        ar_message("DEBUG", ar_buffer);                             \
     } while (0)
 
-#define AR_INFO(msg, ...)                                             \
-    do                                                                \
-    {                                                                 \
-        char log_buffer[OS_MAXSTR];                                   \
-        snprintf(log_buffer, sizeof(log_buffer), msg, ##__VA_ARGS__); \
-        log_message("INFO", log_buffer);                              \
+#define AR_INFO(msg, ...)                                           \
+    do                                                              \
+    {                                                               \
+        char ar_buffer[OS_MAXSTR];                                  \
+        snprintf(ar_buffer, sizeof(ar_buffer), msg, ##__VA_ARGS__); \
+        ar_message("INFO", ar_buffer);                              \
     } while (0)
 
-#define AR_WARN(msg, ...)                                             \
-    do                                                                \
-    {                                                                 \
-        char log_buffer[OS_MAXSTR];                                   \
-        snprintf(log_buffer, sizeof(log_buffer), msg, ##__VA_ARGS__); \
-        log_message("WARN", log_buffer);                              \
+#define AR_WARN(msg, ...)                                           \
+    do                                                              \
+    {                                                               \
+        char ar_buffer[OS_MAXSTR];                                  \
+        snprintf(ar_buffer, sizeof(ar_buffer), msg, ##__VA_ARGS__); \
+        ar_message("WARN", ar_buffer);                              \
     } while (0)
 
-#define AR_ERROR(msg, ...)                                            \
-    do                                                                \
-    {                                                                 \
-        char log_buffer[OS_MAXSTR];                                   \
-        snprintf(log_buffer, sizeof(log_buffer), msg, ##__VA_ARGS__); \
-        log_message("ERROR", log_buffer);                             \
+#define AR_ERROR(msg, ...)                                          \
+    do                                                              \
+    {                                                               \
+        char ar_buffer[OS_MAXSTR];                                  \
+        snprintf(ar_buffer, sizeof(ar_buffer), msg, ##__VA_ARGS__); \
+        ar_message("ERROR", ar_buffer);                             \
     } while (0)
 
 /* Start of a new thread. Only returns on unrecoverable errors. */
@@ -188,7 +188,7 @@ void *AR_Forward(__attribute__((unused)) void *arg)
 
                 for (unsigned int i = 0; i < keys.keysize; i++)
                 {
-                    if (keys.keyentries[i]->rcvd >= (time(0) - logr.global.agents_disconnection_time))
+                    if (keys.keyentries[i]->rcvd >= (time(0) - arr.global.agents_disconnection_time))
                     {
                         strncpy(agent_id, keys.keyentries[i]->id, KEYSIZE);
                         key_unlock();
