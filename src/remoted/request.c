@@ -4,21 +4,33 @@
 #include <request_op.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
+#include <string.h>
 #include "remoted.h"
 #include "state.h"
 #include "wazuh_modules/wmodules.h"
 
 #define COUNTER_LENGTH 64
 #define LOG_FILE "/var/ossec/logs/requestcfile.log"
+
+// Mutex for logging to ensure thread safety
+static pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 #define LOG_MSG(format, ...)                                                                \
     do                                                                                      \
     {                                                                                       \
+        pthread_mutex_lock(&log_mutex);                                                     \
         FILE *log_fp = fopen(LOG_FILE, "a");                                                \
         if (log_fp)                                                                         \
         {                                                                                   \
             fprintf(log_fp, "[%s:%d] " format "\n", __FUNCTION__, __LINE__, ##__VA_ARGS__); \
             fclose(log_fp);                                                                 \
         }                                                                                   \
+        else                                                                                \
+        {                                                                                   \
+            fprintf(stderr, "Failed to open log file %s: %s\n", LOG_FILE, strerror(errno)); \
+        }                                                                                   \
+        pthread_mutex_unlock(&log_mutex);                                                   \
     } while (0)
 
 // Dispatcher threads entry point
@@ -71,7 +83,7 @@ void req_init()
     }
 
     // Create hash table
-    if (req_table = OSHash_Create(), !req_table)
+    if (!(req_table = OSHash_Create()))
     {
         LOG_MSG("Failed to create hash table");
         merror_exit("At OSHash_Create()");
@@ -153,7 +165,7 @@ void *req_dispatch(req_node_t *node)
     w_mutex_lock(&node->mutex);
 
     // Get agent ID and payload
-    if (_payload = strchr(node->buffer, ' '), !_payload)
+    if ((_payload = strchr(node->buffer, ' ')) == NULL)
     {
         merror("Request has no agent id.");
         goto cleanup;
@@ -308,7 +320,7 @@ int req_save(const char *counter, const char *buffer, size_t length)
 
     w_mutex_lock(&mutex_table);
 
-    if (node = OSHash_Get(req_table, counter), node)
+    if ((node = OSHash_Get(req_table, counter)) != NULL)
     {
         req_update(node, buffer, length);
     }
@@ -360,7 +372,7 @@ int req_pool_wait()
             break;
 
         default:
-            merror("At w_cond_timedwait(): %s", strerror(errno));
+            merror("At pthread_cond_timedwait(): %s", strerror(errno));
             wait_ok = 0;
             break;
         }
