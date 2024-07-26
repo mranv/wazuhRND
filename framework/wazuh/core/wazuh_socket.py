@@ -93,6 +93,7 @@ class WazuhSocket:
                 raise WazuhException(1014, str(e))
         else:
             # Asynchronous receive with timeout
+            socket_logger(f"Waiting for response with a timeout of {wait_timeout} seconds.")
             with ThreadPoolExecutor(max_workers=1) as executor:
                 future = executor.submit(_receive)
                 try:
@@ -100,6 +101,7 @@ class WazuhSocket:
                 except TimeoutError:
                     # logger
                     socket_logger(f"Operation timed out after {wait_timeout} seconds.")
+                    self.close()  # Close the connection
                     return b"err Response timeout"
                 except WazuhException as e:
                     # Re-raise WazuhException if needed
