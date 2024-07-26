@@ -4,7 +4,7 @@
 import asyncio
 import os.path
 import socket
-from concurrent.futures import ThreadPoolExecutor, as_completed
+import concurrent.futures
 from json import dumps, loads
 from struct import pack, unpack
 from wazuh import common
@@ -95,24 +95,17 @@ class WazuhSocket:
         else:
             # Asynchronous receive with timeout
             socket_logger(f"Waiting for response with a timeout of {wait_timeout} seconds.")
-            with ThreadPoolExecutor(max_workers=1) as executor:
+            with concurrent.futures.ThreadPoolExecutor() as executor:
                 future = executor.submit(_receive)
                 try:
                     msg = future.result(timeout=wait_timeout)
                     socket_logger(f"get AKG form AGENT --------------- {msg}")
-                    return msg
-                except TimeoutError:
+                except TimeoutError as t:
                     # logger
                     socket_logger(f"Operation timed out after {wait_timeout} seconds.")
-                    self.close()  # Close the connection
-                    try:
-                        return b"err Response timeout!"
-                    except Exception as e:
-                        socket_logger(f"not send the err Response timeout!{e}")
-                        raise WazuhException(1014, str(e))
-                except WazuhException as e:
-                    # Re-raise WazuhException if needed
-                    raise e
+                    msg = b"err Response timeout"
+                    raise WazuhException(1014, str(t))
+                return msg
 
 class WazuhSocketJSON(WazuhSocket):
     MAX_SIZE = 65536
