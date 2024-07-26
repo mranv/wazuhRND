@@ -30,29 +30,57 @@
 
 #define LOG_FILE "/var/ossec/logs/network_ops.log"
 
-void log_fun(const char *function_name, const char *format, ...)
-{
-    time_t now = time(NULL);
-    char timestamp[26];
-    strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", localtime(&now));
+/* Initialize the mutex */
+pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-    FILE *log_file = fopen(LOG_FILE, "a");
+/**
+ * @brief Logs messages with a timestamp, function name, log level, and writes to a specified log file.
+ *
+ * @param log_file_path The path to the log file.
+ * @param function The name of the function from which the log is being made.
+ * @param level The log level (e.g., INFO, WARN, ERROR).
+ * @param format The format string, similar to printf.
+ * @param ... Additional arguments for the format string.
+ */
+void log_function(const char *log_file_path, const char *function, const char *level, const char *format, ...)
+{
+    va_list args;
+    char buffer[1024]; // Adjust size as needed
+    time_t now = time(NULL);
+    struct tm *t = localtime(&now);
+    FILE *log_file;
+
+    /* Lock the mutex for thread-safe logging */
+    pthread_mutex_lock(&log_mutex);
+
+    /* Get current time */
+    strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", t);
+    printf("[%s] [%s] [%s] ", buffer, function, level);
+
+    /* Print to console */
+    va_start(args, format);
+    vprintf(format, args);
+    va_end(args);
+    printf("\n");
+
+    /* Also log to file */
+    log_file = fopen(log_file_path, "a");
     if (log_file)
     {
-        fprintf(log_file, "message run | %s | %s", timestamp, function_name);
-
-        if (format)
-        {
-            va_list args;
-            va_start(args, format);
-            fprintf(log_file, " | ");
-            vfprintf(log_file, format, args);
-            va_end(args);
-        }
-
+        fprintf(log_file, "[%s] [%s] [%s] ", buffer, function, level);
+        va_start(args, format);
+        vfprintf(log_file, format, args);
+        va_end(args);
         fprintf(log_file, "\n");
         fclose(log_file);
     }
+    else
+    {
+        fprintf(stderr, "Unable to open log file: %s\n", log_file_path);
+    }
+
+    /* Unlock the mutex */
+    pthread_mutex_unlock(&log_mutex);
 }
 
 /* Prototypes */

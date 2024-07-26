@@ -1,17 +1,3 @@
-/* Copyright (C) 2015, Wazuh Inc.
- * Copyright (C) 2009 Trend Micro Inc.
- * All rights reserved.
- *
- * This program is free software; you can redistribute it
- * and/or modify it under the terms of the GNU General Public
- * License (version 2) as published by the FSF - Free Software
- * Foundation
- */
-
-/* OS_net Library
- * APIs for many network operations
- */
-
 #define IPV6_LINK_LOCAL_PREFIX "FE80:0000:0000:0000:"
 
 #define WAZUH_IPC_TIMEOUT 600 // seconds
@@ -30,7 +16,7 @@
 #define LOG_LEVEL_ERROR "ERROR"
 
 /* Mutex for thread-safe logging */
-pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
+extern pthread_mutex_t log_mutex;
 
 /**
  * @brief Logs messages with a timestamp, function name, log level, and writes to a specified log file.
@@ -41,46 +27,7 @@ pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
  * @param format The format string, similar to printf.
  * @param ... Additional arguments for the format string.
  */
-void log_function(const char *log_file_path, const char *function, const char *level, const char *format, ...)
-{
-    va_list args;
-    char buffer[1024]; // Adjust size as needed
-    time_t now = time(NULL);
-    struct tm *t = localtime(&now);
-    FILE *log_file;
-
-    /* Lock the mutex for thread-safe logging */
-    pthread_mutex_lock(&log_mutex);
-
-    /* Get current time */
-    strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", t);
-    printf("[%s] [%s] [%s] ", buffer, function, level);
-
-    /* Print to console */
-    va_start(args, format);
-    vprintf(format, args);
-    va_end(args);
-    printf("\n");
-
-    /* Also log to file */
-    log_file = fopen(log_file_path, "a");
-    if (log_file)
-    {
-        fprintf(log_file, "[%s] [%s] [%s] ", buffer, function, level);
-        va_start(args, format);
-        vfprintf(log_file, format, args);
-        va_end(args);
-        fprintf(log_file, "\n");
-        fclose(log_file);
-    }
-    else
-    {
-        fprintf(stderr, "Unable to open log file: %s\n", log_file_path);
-    }
-
-    /* Unlock the mutex */
-    pthread_mutex_unlock(&log_mutex);
-}
+void log_function(const char *log_file_path, const char *function, const char *level, const char *format, ...);
 
 /* OS_Bindport*
  * Bind a specific port (protocol and a ip).
