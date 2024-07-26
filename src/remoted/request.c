@@ -1,39 +1,24 @@
+/* Remote request listener
+ * Copyright (C) 2015, Wazuh Inc.
+ * May 31, 2017.
+ *
+ * This program is free software; you can redistribute it
+ * and/or modify it under the terms of the GNU General Public
+ * License (version 2) as published by the FSF - Free Software
+ * Foundation.
+ */
+
 #include <pthread.h>
 #include <shared.h>
 #include <os_net/os_net.h>
 #include <request_op.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <string.h>
 #include "remoted.h"
 #include "state.h"
 #include "wazuh_modules/wmodules.h"
 
 #define COUNTER_LENGTH 64
-#define LOG_FILE "/var/ossec/logs/requestcfile.log"
 
-// Mutex for logging to ensure thread safety
-static pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-#define LOG_MSG(format, ...)                                                                \
-    do                                                                                      \
-    {                                                                                       \
-        pthread_mutex_lock(&log_mutex);                                                     \
-        FILE *log_fp = fopen(LOG_FILE, "a");                                                \
-        if (log_fp)                                                                         \
-        {                                                                                   \
-            fprintf(log_fp, "[%s:%d] " format "\n", __FUNCTION__, __LINE__, ##__VA_ARGS__); \
-            fclose(log_fp);                                                                 \
-        }                                                                                   \
-        else                                                                                \
-        {                                                                                   \
-            fprintf(stderr, "Failed to open log file %s: %s\n", LOG_FILE, strerror(errno)); \
-        }                                                                                   \
-        pthread_mutex_unlock(&log_mutex);                                                   \
-    } while (0)
-
-// Dispatcher threads entry point
+// Dispatcher theads entry point
 static void *req_dispatch(req_node_t *node);
 
 // Increment request pool
@@ -63,8 +48,6 @@ int guess_agent_group;
 // Initialize request module
 void req_init()
 {
-    LOG_MSG("Initializing request module");
-
     // Get values from internal options
     request_pool = getDefine_Int("remoted", "request_pool", 1, 4096);
     request_timeout = getDefine_Int("remoted", "request_timeout", 1, 600);
@@ -74,18 +57,14 @@ void req_init()
     max_attempts = getDefine_Int("remoted", "max_attempts", 1, 16);
     guess_agent_group = getDefine_Int("remoted", "guess_agent_group", 0, 1);
 
-    LOG_MSG("Configuration: request_pool=%d, request_timeout=%d, response_timeout=%d, rto_sec=%d, rto_msec=%d, max_attempts=%d, guess_agent_group=%d",
-            request_pool, request_timeout, response_timeout, rto_sec, rto_msec, max_attempts, guess_agent_group);
-
     if (guess_agent_group && logr.worker_node)
     {
         mwarn("The internal option guess_agent_group must be configured on the master node.");
     }
 
     // Create hash table
-    if (!(req_table = OSHash_Create()))
+    if (req_table = OSHash_Create(), !req_table)
     {
-        LOG_MSG("Failed to create hash table");
         merror_exit("At OSHash_Create()");
     }
     OSHash_SetFreeDataPointer(req_table, (void (*)(void *))req_free);
@@ -94,7 +73,6 @@ void req_init()
 // Request sender
 void req_sender(int peer, char *buffer, ssize_t length)
 {
-    LOG_MSG("Sending request: peer=%d, length=%zd", peer, length);
     int error;
     unsigned int counter = (unsigned int)os_random();
     char counter_s[COUNTER_LENGTH];
@@ -108,8 +86,6 @@ void req_sender(int peer, char *buffer, ssize_t length)
     w_mutex_lock(&mutex_table);
     error = OSHash_Add(req_table, counter_s, node);
     w_mutex_unlock(&mutex_table);
-
-    LOG_MSG("Request added to hash table: counter=%s, error=%d", counter_s, error);
 
     switch (error)
     {
@@ -144,10 +120,9 @@ void req_sender(int peer, char *buffer, ssize_t length)
     return;
 }
 
-// Dispatcher threads entry point
+// Dispatcher theads entry point
 void *req_dispatch(req_node_t *node)
 {
-    LOG_MSG("Dispatching request: counter=%s", node->counter);
     int attempts;
     int ploff;
     long nsec;
@@ -165,7 +140,7 @@ void *req_dispatch(req_node_t *node)
     w_mutex_lock(&node->mutex);
 
     // Get agent ID and payload
-    if ((_payload = strchr(node->buffer, ' ')) == NULL)
+    if (_payload = strchr(node->buffer, ' '), !_payload)
     {
         merror("Request has no agent id.");
         goto cleanup;
@@ -312,7 +287,6 @@ cleanup:
 // Save request data (ack or response). Return 0 on success or -1 on error.
 int req_save(const char *counter, const char *buffer, size_t length)
 {
-    LOG_MSG("Saving request: counter=%s, buffer=%s, length=%zu", counter, buffer, length);
     req_node_t *node;
     int retval = 0;
 
@@ -320,7 +294,7 @@ int req_save(const char *counter, const char *buffer, size_t length)
 
     w_mutex_lock(&mutex_table);
 
-    if ((node = OSHash_Get(req_table, counter)) != NULL)
+    if (node = OSHash_Get(req_table, counter), node)
     {
         req_update(node, buffer, length);
     }
@@ -338,7 +312,6 @@ int req_save(const char *counter, const char *buffer, size_t length)
 // Increment request pool
 void req_pool_post()
 {
-    LOG_MSG("Posting request pool: current pool=%d", request_pool);
     w_mutex_lock(&mutex_pool);
     request_pool++;
     w_cond_signal(&pool_available);
@@ -348,7 +321,6 @@ void req_pool_post()
 // Wait for available pool. Returns 1 on success or 0 on error
 int req_pool_wait()
 {
-    LOG_MSG("Waiting for request pool: current pool=%d", request_pool);
     struct timespec timeout;
     struct timeval now = {0, 0};
     int wait_ok = 1;
@@ -372,7 +344,7 @@ int req_pool_wait()
             break;
 
         default:
-            merror("At pthread_cond_timedwait(): %s", strerror(errno));
+            merror("At w_cond_timedwait(): %s", strerror(errno));
             wait_ok = 0;
             break;
         }

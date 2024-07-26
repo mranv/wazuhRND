@@ -1,91 +1,21 @@
+/* Copyright (C) 2015, Wazuh Inc.
+ * Copyright (C) 2009 Trend Micro Inc.
+ * All right reserved.
+ *
+ * This program is free software; you can redistribute it
+ * and/or modify it under the terms of the GNU General Public
+ * License (version 2) as published by the FSF - Free Software
+ * Foundation
+ */
+
 #include <pthread.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-#include <sys/time.h>
+
 #include "shared.h"
 #include "remoted.h"
 #include "state.h"
 #include "os_net/os_net.h"
 
-// Define log file path
-#define LOG_FILE "/var/ossec/logs/ar_forward.log"
-
-// Mutex for logging to ensure thread safety
-static pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-// Logging functions
-static void log_error(const char *format, ...)
-{
-    va_list args;
-    va_start(args, format);
-
-    pthread_mutex_lock(&log_mutex);
-    FILE *log_fp = fopen(LOG_FILE, "a");
-    if (log_fp)
-    {
-        fprintf(log_fp, "[ERROR] ");
-        vfprintf(log_fp, format, args);
-        fprintf(log_fp, "\n");
-        fclose(log_fp);
-    }
-    else
-    {
-        fprintf(stderr, "Failed to open log file %s: %s\n", LOG_FILE, strerror(errno));
-    }
-    pthread_mutex_unlock(&log_mutex);
-
-    va_end(args);
-}
-
-static void log_warning(const char *format, ...)
-{
-    va_list args;
-    va_start(args, format);
-
-    pthread_mutex_lock(&log_mutex);
-    FILE *log_fp = fopen(LOG_FILE, "a");
-    if (log_fp)
-    {
-        fprintf(log_fp, "[WARNING] ");
-        vfprintf(log_fp, format, args);
-        fprintf(log_fp, "\n");
-        fclose(log_fp);
-    }
-    else
-    {
-        fprintf(stderr, "Failed to open log file %s: %s\n", LOG_FILE, strerror(errno));
-    }
-    pthread_mutex_unlock(&log_mutex);
-
-    va_end(args);
-}
-
-static void log_debug(const char *format, ...)
-{
-    va_list args;
-    va_start(args, format);
-
-    pthread_mutex_lock(&log_mutex);
-    FILE *log_fp = fopen(LOG_FILE, "a");
-    if (log_fp)
-    {
-        fprintf(log_fp, "[DEBUG] ");
-        vfprintf(log_fp, format, args);
-        fprintf(log_fp, "\n");
-        fclose(log_fp);
-    }
-    else
-    {
-        fprintf(stderr, "Failed to open log file %s: %s\n", LOG_FILE, strerror(errno));
-    }
-    pthread_mutex_unlock(&log_mutex);
-
-    va_end(args);
-}
-
-// Start of a new thread. Only returns on unrecoverable errors.
+/* Start of a new thread. Only returns on unrecoverable errors. */
 void *AR_Forward(__attribute__((unused)) void *arg)
 {
     int arq = 0;
@@ -98,42 +28,42 @@ void *AR_Forward(__attribute__((unused)) void *arg)
     char *ar_agent_id = NULL;
     char *tmp_str = NULL;
 
-    // Create the unix queue
+    /* Create the unix queue */
     if ((arq = StartMQ(path, READ, 0)) < 0)
     {
-        log_error("Failed to start MQ at path %s: %s", path, strerror(errno));
-        exit(EXIT_FAILURE);
+        merror_exit(QUEUE_ERROR, path, strerror(errno));
     }
 
-    // Daemon loop
+    /* Daemon loop */
     while (1)
     {
         if (OS_RecvUnix(arq, OS_MAXSTR - 1, msg))
         {
-            log_debug("Active response request received: %s", msg);
 
-            // Always zero the location
+            mdebug2("Active response request received: %s", msg);
+
+            /* Always zero the location */
             ar_location = 0;
 
-            // Location
+            /* Location */
             tmp_str = strchr(msg, ')');
             if (!tmp_str)
             {
-                log_warning("Invalid message format: %s", msg);
+                mwarn(EXECD_INV_MSG, msg);
                 continue;
             }
             tmp_str += 2;
 
-            // Source IP
+            /* Source IP */
             tmp_str = strchr(tmp_str, ']');
             if (!tmp_str)
             {
-                log_warning("Invalid message format: %s", msg);
+                mwarn(EXECD_INV_MSG, msg);
                 continue;
             }
             tmp_str += 2;
 
-            // AR location
+            /* AR location */
             if (*tmp_str == ALL_AGENTS_C)
             {
                 ar_location |= ALL_AGENTS;
@@ -154,35 +84,40 @@ void *AR_Forward(__attribute__((unused)) void *arg)
             }
             tmp_str += 2;
 
-            // Extract the agent id
+            /* Extract the agent id */
             ar_agent_id = tmp_str;
             tmp_str = strchr(tmp_str, ' ');
             if (!tmp_str)
             {
-                log_warning("Invalid message format: %s", msg);
+                mwarn(EXECD_INV_MSG, msg);
                 continue;
             }
             *tmp_str = '\0';
             tmp_str++;
 
-            // Create the new message
+            /* Create the new message */
             if (ar_location & NO_AR_MSG)
             {
-                snprintf(msg_to_send, OS_MAXSTR, "%s%s", CONTROL_HEADER, tmp_str);
+                snprintf(msg_to_send, OS_MAXSTR, "%s%s",
+                         CONTROL_HEADER,
+                         tmp_str);
             }
             else
             {
-                snprintf(msg_to_send, OS_MAXSTR, "%s%s%s", CONTROL_HEADER, EXECD_HEADER, tmp_str);
+                snprintf(msg_to_send, OS_MAXSTR, "%s%s%s",
+                         CONTROL_HEADER,
+                         EXECD_HEADER,
+                         tmp_str);
             }
 
-            log_debug("Active response sent: %s", msg_to_send);
+            mdebug2("Active response sent: %s", msg_to_send);
 
-            // Send to ALL agents
+            /* Send to ALL agents */
             if (ar_location & ALL_AGENTS)
             {
                 char agent_id[KEYSIZE + 1] = "";
 
-                // Lock use of keys
+                /* Lock use of keys */
                 key_lock_read();
 
                 for (unsigned int i = 0; i < keys.keysize; i++)
@@ -201,7 +136,8 @@ void *AR_Forward(__attribute__((unused)) void *arg)
 
                 key_unlock();
             }
-            // Send to the remote agent that generated the event or to a pre-defined agent
+
+            /* Send to the remote agent that generated the event or to a pre-defined agent */
             else if (ar_location & (REMOTE_AGENT | SPECIFIC_AGENT))
             {
                 if (send_msg(ar_agent_id, msg_to_send, -1) >= 0)
