@@ -157,7 +157,7 @@ void *req_dispatch(req_node_t *node)
 {
 
     // Logger
-    tm_logger("req_dispatch fucntion was start");
+    tm_logger("req_dispatch fucntion was start %d",1);
     tm_logger("req_dispatch: counter = %s", node->counter);
 
     int attempts;
@@ -275,7 +275,7 @@ void *req_dispatch(req_node_t *node)
         timeout.tv_nsec = now.tv_usec * 1000;
 
         // Logger
-        int time_of_cond_timedwait = pthread_cond_timedwait(&node->available, &timeout);
+        int time_of_cond_timedwait = pthread_cond_timedwait(&node->available, &node->mutex, &timeout);
         tm_logger("pthread_cond_timedwait(&node->available, &timeout) = %d",time_of_cond_timedwait);
 
         // Logger for pthread_cond_timedwait 
