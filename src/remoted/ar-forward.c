@@ -17,10 +17,10 @@
 #include "state.h"
 #include "os_net/os_net.h"
 
-#define ARAR_F "/var/ossec/logs/arforwarder.log"
+#define AR_FILE "/var/ossec/logs/arforwarder.log"
 
 // Custom logger function
-void ar_message(const char *level, const char *message)
+void log_message(const char *level, const char *message)
 {
     char timestamp[128];
     struct tm *local_time;
@@ -30,7 +30,7 @@ void ar_message(const char *level, const char *message)
     local_time = localtime(&t);
     strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", local_time);
 
-    FILE *log_file = fopen(ARAR_F, "a");
+    FILE *log_file = fopen(AR_FILE, "a");
     if (log_file)
     {
         fprintf(log_file, "[%s] %s: %s\n", timestamp, level, message);
@@ -38,7 +38,7 @@ void ar_message(const char *level, const char *message)
     }
     else
     {
-        fprintf(stderr, "Error opening log file: %s\n", ARAR_F);
+        fprintf(stderr, "Error opening log file: %s\n", AR_FILE);
     }
 }
 
@@ -47,7 +47,7 @@ void ar_message(const char *level, const char *message)
     {                                                                 \
         char log_buffer[OS_MAXSTR];                                   \
         snprintf(log_buffer, sizeof(log_buffer), msg, ##__VA_ARGS__); \
-        ar_message("DEBUG", log_buffer);                              \
+        log_message("DEBUG", log_buffer);                             \
     } while (0)
 
 #define AR_INFO(msg, ...)                                             \
@@ -55,7 +55,7 @@ void ar_message(const char *level, const char *message)
     {                                                                 \
         char log_buffer[OS_MAXSTR];                                   \
         snprintf(log_buffer, sizeof(log_buffer), msg, ##__VA_ARGS__); \
-        ar_message("INFO", log_buffer);                               \
+        log_message("INFO", log_buffer);                              \
     } while (0)
 
 #define AR_WARN(msg, ...)                                             \
@@ -63,7 +63,7 @@ void ar_message(const char *level, const char *message)
     {                                                                 \
         char log_buffer[OS_MAXSTR];                                   \
         snprintf(log_buffer, sizeof(log_buffer), msg, ##__VA_ARGS__); \
-        ar_message("WARN", log_buffer);                               \
+        log_message("WARN", log_buffer);                              \
     } while (0)
 
 #define AR_ERROR(msg, ...)                                            \
@@ -71,7 +71,7 @@ void ar_message(const char *level, const char *message)
     {                                                                 \
         char log_buffer[OS_MAXSTR];                                   \
         snprintf(log_buffer, sizeof(log_buffer), msg, ##__VA_ARGS__); \
-        ar_message("ERROR", log_buffer);                              \
+        log_message("ERROR", log_buffer);                             \
     } while (0)
 
 /* Start of a new thread. Only returns on unrecoverable errors. */
