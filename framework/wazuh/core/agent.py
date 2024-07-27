@@ -24,10 +24,6 @@ from wazuh.core.utils import WazuhVersion, plain_dict_to_nested_dict, get_fields
 from wazuh.core.wazuh_queue import WazuhQueue
 from wazuh.core.wazuh_socket import WazuhSocket, WazuhSocketJSON, create_wazuh_socket_message
 from wazuh.core.wdb import WazuhDBConnection
-<<<<<<< HEAD
-from wazuh.core.custom_logger import custom_logger
-=======
->>>>>>> v4.7.5
 
 detect_wrong_lines = re.compile(r'(.+ .+ (?:any|\d+\.\d+\.\d+\.\d+) \w+)')
 detect_valid_lines = re.compile(r'^(\d{3,}) (.+) (any|\d+\.\d+\.\d+\.\d+) (\w+)', re.MULTILINE)
@@ -1141,14 +1137,6 @@ class Agent:
                                                                    if set_default else "")
 
     def get_config(self, component: str = '', config: str = '', agent_version: str = '') -> dict:
-<<<<<<< HEAD
-        
-        # logger
-        custom_logger(f"get_config (Agnet.py)")
-        custom_logger(f"get_config parmitors - component : {component}, config : {config}, agent_version : {agent_version}")
-        
-=======
->>>>>>> v4.7.5
         """Read agent's loaded configuration.
 
         Parameters
