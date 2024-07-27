@@ -109,6 +109,17 @@ class WazuhSocket:
             
     def receive(self, header_format="<I", header_size=4, wait_timeout=None):
         
+        # Logger
+        socket_logger(f"receive (wazuh_socket) start")
+        
+        def _recev():
+            
+            # Logger
+            socket_logger(f"_recev (wazuh_socket) call")
+            
+            size = unpack(header_format, self.s.recv(header_size, socket.MSG_WAITALL))[0]
+            return self.s.recv(size, socket.MSG_WAITALL)
+        
         if wait_timeout is None:
             try:
                 size = unpack(header_format, self.s.recv(header_size, socket.MSG_WAITALL))[0]
@@ -117,7 +128,11 @@ class WazuhSocket:
                 raise WazuhException(1014, str(e))
         else:
             with concurrent.futures.ThreadPoolExecutor() as executor:
-                future = executor.submit(self.s.recv,size,socket.MSG_WAITALL)
+                
+                # Logger
+                socket_logger(f"Waiting for response with a timeout of {wait_timeout} seconds.")
+                
+                future = executor.submit(_recev)
                 try:
                     result = future.result(timeout=wait_timeout)
                 except TimeoutError as t:
