@@ -77,35 +77,54 @@ class WazuhSocket:
         
     # patch for the time oute
         
-    def receive(self, header_format="<I", header_size=4, wait_timeout=None):
-        def _receive():
-            try:
-                size = unpack(header_format, self.s.recv(header_size, socket.MSG_WAITALL))[0]
-                return self.s.recv(size, socket.MSG_WAITALL)
-            except Exception as e:
-                raise WazuhException(1014, str(e))
+    # def receive(self, header_format="<I", header_size=4, wait_timeout=None):
+    #     def _receive():
+    #         try:
+    #             size = unpack(header_format, self.s.recv(header_size, socket.MSG_WAITALL))[0]
+    #             return self.s.recv(size, socket.MSG_WAITALL)
+    #         except Exception as e:
+    #             raise WazuhException(1014, str(e))
 
+    #     if wait_timeout is None:
+    #         # Synchronous receive
+    #         try:
+    #             size = unpack(header_format, self.s.recv(header_size, socket.MSG_WAITALL))[0]
+    #             return self.s.recv(size, socket.MSG_WAITALL)
+    #         except Exception as e:
+    #             raise WazuhException(1014, str(e))
+    #     else:
+    #         # Asynchronous receive with timeout
+    #         socket_logger(f"Waiting for response with a timeout of {wait_timeout} seconds.")
+    #         with concurrent.futures.ThreadPoolExecutor() as executor:
+    #             future = executor.submit(_receive)
+    #             try:
+    #                 msg = future.result(timeout=wait_timeout)
+    #                 socket_logger(f"get AKG form AGENT --------------- {msg}")
+    #             except TimeoutError as t:
+    #                 # logger
+    #                 socket_logger(f"Operation timed out after {wait_timeout} seconds.")
+    #                 msg = b"err Response timeout"
+    #                 raise WazuhException(1014, str(t))
+    #             return msg
+            
+    def receive(self, header_format="<I", header_size=4, wait_timeout=None):
+        
         if wait_timeout is None:
-            # Synchronous receive
             try:
                 size = unpack(header_format, self.s.recv(header_size, socket.MSG_WAITALL))[0]
                 return self.s.recv(size, socket.MSG_WAITALL)
             except Exception as e:
                 raise WazuhException(1014, str(e))
         else:
-            # Asynchronous receive with timeout
-            socket_logger(f"Waiting for response with a timeout of {wait_timeout} seconds.")
             with concurrent.futures.ThreadPoolExecutor() as executor:
-                future = executor.submit(_receive)
+                future = executor.submit(self.s.recv,size,socket.MSG_WAITALL)
                 try:
-                    msg = future.result(timeout=wait_timeout)
-                    socket_logger(f"get AKG form AGENT --------------- {msg}")
+                    result = future.result(timeout=wait_timeout)
                 except TimeoutError as t:
-                    # logger
-                    socket_logger(f"Operation timed out after {wait_timeout} seconds.")
-                    msg = b"err Response timeout"
-                    raise WazuhException(1014, str(t))
-                return msg
+                    result = b"err Response timeout"
+                   
+                return result
+            
 
 class WazuhSocketJSON(WazuhSocket):
     MAX_SIZE = 65536
