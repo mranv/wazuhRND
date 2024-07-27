@@ -9,7 +9,10 @@ from struct import pack, unpack
 
 from wazuh import common
 from wazuh.core.exception import WazuhException, WazuhInternalError
+<<<<<<< HEAD
 from wazuh.core.custom_logger import socket_logger
+=======
+>>>>>>> v4.7.5
 
 SOCKET_COMMUNICATION_PROTOCOL_VERSION = 1
 
@@ -43,6 +46,7 @@ class WazuhSocket:
         self.s.close()
 
     def send(self, msg_bytes, header_format="<I"):
+<<<<<<< HEAD
         
         # logger
         socket_logger(f"send (wazuh_socket) -->> msg_bytes : {msg_bytes}, header_formal : {header_format}")
@@ -52,11 +56,15 @@ class WazuhSocket:
             # logger
             socket_logger(f"if not isintance {isinstance(msg_bytes, bytes)} and ERROR : {WazuhException(1105)} Type must be bytes")
             
+=======
+        if not isinstance(msg_bytes, bytes):
+>>>>>>> v4.7.5
             raise WazuhException(1105, "Type must be bytes")
 
         try:
             sent = self.s.send(pack(header_format, len(msg_bytes)) + msg_bytes)
             if sent == 0:
+<<<<<<< HEAD
                 
                 # logger
                 socket_logger(f"if number of bytes is sende in 0 then ERROR : {WazuhException(1014)}")
@@ -79,6 +87,15 @@ class WazuhSocket:
         # Logger
         socket_logger(f"receive (wazuh_socket) -->> header_format : {header_format}")
         
+=======
+                raise WazuhException(1014, "Number of sent bytes is 0")
+            return sent
+        except Exception as e:
+            raise WazuhException(1014, str(e))
+
+    def receive(self, header_format="<I", header_size=4):
+
+>>>>>>> v4.7.5
         try:
             size = unpack(header_format, self.s.recv(header_size, socket.MSG_WAITALL))[0]
             return self.s.recv(size, socket.MSG_WAITALL)
@@ -356,10 +373,13 @@ async def wazuh_sendsync(daemon_name: str = None, message: str = None) -> dict:
 
 
 def create_wazuh_socket_message(origin=None, command=None, parameters=None):
+<<<<<<< HEAD
     
     # logger
     socket_logger(f"create_wazuh_socket_message (wazuh_socket.py) orifin : {origin}, command : {command}, parameters : {parameters}")
     
+=======
+>>>>>>> v4.7.5
     communication_protocol_message = {'version': SOCKET_COMMUNICATION_PROTOCOL_VERSION}
 
     if origin:
@@ -371,7 +391,10 @@ def create_wazuh_socket_message(origin=None, command=None, parameters=None):
     if parameters:
         communication_protocol_message['parameters'] = parameters
 
+<<<<<<< HEAD
     # logger
     socket_logger(f"create_wazuh_socket_message (wazuh_socket.py) return : {communication_protocol_message}")
     
+=======
+>>>>>>> v4.7.5
     return communication_protocol_message

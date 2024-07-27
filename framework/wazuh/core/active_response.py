@@ -11,6 +11,7 @@ from wazuh.core.exception import WazuhError
 from wazuh.core.utils import WazuhVersion
 from wazuh.core.wazuh_queue import WazuhQueue
 from wazuh.core.wazuh_socket import create_wazuh_socket_message
+<<<<<<< HEAD
 from wazuh.core.custom_logger import custom_logger
 
 
@@ -20,6 +21,11 @@ def create_message(command: str = '', custom: bool = False, arguments: list = No
     custom_logger(f"create_message (active_response core)")
     custom_logger(f"command: {command} , custom : {custom}, aguments : {arguments}")
     
+=======
+
+
+def create_message(command: str = '', custom: bool = False, arguments: list = None) -> str:
+>>>>>>> v4.7.5
     """Create the message that will be sent.
 
     Parameters
@@ -45,35 +51,47 @@ def create_message(command: str = '', custom: bool = False, arguments: list = No
         Message that will be sent to the socket.
     """
     if not command:
+<<<<<<< HEAD
         
         # logger
         custom_logger(f"is not command : {WazuhError(1650)}")
         
+=======
+>>>>>>> v4.7.5
         raise WazuhError(1650)
 
     commands = get_commands()
     if not custom and command not in commands:
+<<<<<<< HEAD
         
         # logger
         custom_logger(f"command is not custom and command is not one of the available commands : {WazuhError(1652)}")
         
+=======
+>>>>>>> v4.7.5
         raise WazuhError(1652)
 
     msg_queue = "!{}".format(command) if custom else command
     msg_queue += " " + " ".join(shell_escape(str(x)) for x in arguments) if arguments else " - -"
 
+<<<<<<< HEAD
     # logger
     custom_logger(f"create_message (active_response core) return msg_queue : {msg_queue}")
 
+=======
+>>>>>>> v4.7.5
     return msg_queue
 
 
 def create_json_message(command: str = '', arguments: list = None, alert: dict = None) -> str:
+<<<<<<< HEAD
     
     # logger
     custom_logger(f"create_json_message (active_response core)")
     custom_logger(f"command : {command}, arguments : {arguments}, alert : {alert}")
     
+=======
+>>>>>>> v4.7.5
     """Create the JSON message that will be sent. Function used when Wazuh agent version is >= 4.2.0.
 
     Parameters
@@ -97,6 +115,7 @@ def create_json_message(command: str = '', arguments: list = None, alert: dict =
         Message that will be sent to the socket.
     """
     if not command:
+<<<<<<< HEAD
         
         # logger
         custom_logger(f"if not commmand : {WazuhError(1650)}")
@@ -113,24 +132,38 @@ def create_json_message(command: str = '', arguments: list = None, alert: dict =
     # logger
     custom_logger(f"node_name : {node_name}")
     
+=======
+        raise WazuhError(1650)
+
+    cluster_enabled = not read_cluster_config()['disabled']
+    node_name = get_node().get('node') if cluster_enabled else None
+
+>>>>>>> v4.7.5
     msg_queue = json.dumps(
         create_wazuh_socket_message(origin={'name': node_name, 'module': common.origin_module.get()},
                                     command=command,
                                     parameters={'extra_args': arguments if arguments else [],
                                                 'alert': alert if alert else {}}))
+<<<<<<< HEAD
     # logger
     custom_logger(f"create_json_message (active_response core) return msg_queue : {msg_queue}")
     
+=======
+
+>>>>>>> v4.7.5
     return msg_queue
 
 
 def send_ar_message(agent_id: str = '', wq: WazuhQueue = None, command: str = '', arguments: list = None,
                     custom: bool = False, alert: dict = None) -> None:
+<<<<<<< HEAD
     
     # logger
     custom_logger(f"send_ar_message (active_response core)")
     custom_logger(f"agent_id : {agent_id}, wq : {wq}, command : {command}, argments : {arguments}, custom : {custom}, alert : {alert}")
     
+=======
+>>>>>>> v4.7.5
     """Send the active response message to the agent.
 
     Parameters
@@ -158,6 +191,7 @@ def send_ar_message(agent_id: str = '', wq: WazuhQueue = None, command: str = ''
     """
     # Agent basic information
     agent_info = Agent(agent_id).get_basic_information()
+<<<<<<< HEAD
     
     # logger
     custom_logger(f"1. send_ar_message (active responce core) anget Info : {agent_info}")
@@ -169,11 +203,17 @@ def send_ar_message(agent_id: str = '', wq: WazuhQueue = None, command: str = ''
     if agent_info['status'].lower() != 'active':
         
         custom_logger("if agent is not active : {WazuhError(1707)}")
+=======
+
+    # Check if agent is active
+    if agent_info['status'].lower() != 'active':
+>>>>>>> v4.7.5
         raise WazuhError(1707)
 
     # Once we know the agent is active, store version
     agent_version = agent_info['version']
 
+<<<<<<< HEAD
     # logger
     custom_logger(f"3 .send_ar_message (active responce core) agent version : {agent_version}")
     
@@ -188,11 +228,17 @@ def send_ar_message(agent_id: str = '', wq: WazuhQueue = None, command: str = ''
         # logger
         custom_logger(f"if active response is disabled : {WazuhError(1750)}")
         
+=======
+    # Check if AR is enabled
+    agent_conf = Agent(agent_id).get_config('com', 'active-response', agent_version)
+    if agent_conf['active-response']['disabled'] == 'yes':
+>>>>>>> v4.7.5
         raise WazuhError(1750)
 
     # Create classic msg or JSON msg depending on the agent version
     if WazuhVersion(agent_version) >= WazuhVersion(common.AR_LEGACY_VERSION):
         msg_queue = create_json_message(command=command, arguments=arguments, alert=alert)
+<<<<<<< HEAD
         
         # logger
         custom_logger(f"5. json msg : {msg_queue}")
@@ -205,15 +251,22 @@ def send_ar_message(agent_id: str = '', wq: WazuhQueue = None, command: str = ''
     
     # logger
     custom_logger(f"6. send_ar_message (active_response core) -- send the msg to wq (wazuh_queue) send_msg_to_agent msg_queue : {msg_queue}")
+=======
+    else:
+        msg_queue = create_message(command=command, arguments=arguments, custom=custom)
+>>>>>>> v4.7.5
 
     wq.send_msg_to_agent(msg=msg_queue, agent_id=agent_id, msg_type=WazuhQueue.AR_TYPE)
 
 
 def get_commands() -> list:
+<<<<<<< HEAD
     
     # logger
     custom_logger(f"get_commands (active_response core)")
     
+=======
+>>>>>>> v4.7.5
     """Get the available commands.
 
     Returns
@@ -226,17 +279,24 @@ def get_commands() -> list:
         for line in f:
             cmd = line.split(" - ")[0]
             commands.append(cmd)
+<<<<<<< HEAD
     # logger
     custom_logger(f"get_commands (active_response core) - commands: {commands}")
     
+=======
+
+>>>>>>> v4.7.5
     return commands
 
 
 def shell_escape(command: str = '') -> str:
+<<<<<<< HEAD
     
     # logger
     custom_logger(f"shell_escape (active_response core)")
     custom_logger(f"command : {command}")
+=======
+>>>>>>> v4.7.5
     """Escape some characters in the command before sending it.
 
     Parameters
@@ -255,7 +315,10 @@ def shell_escape(command: str = '') -> str:
     for shell_esc_char in shell_escapes:
         command = command.replace(shell_esc_char, "\\" + shell_esc_char)
 
+<<<<<<< HEAD
     # logger
     custom_logger(f"shell_escape (active_response core) - command: {command}")
     
+=======
+>>>>>>> v4.7.5
     return command

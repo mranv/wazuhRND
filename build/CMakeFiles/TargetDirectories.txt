@@ -1,0 +1,4 @@
+/home/development/Desktop/wazuhRND/build/CMakeFiles/utils_unit_test.dir
+/home/development/Desktop/wazuhRND/build/CMakeFiles/test.dir
+/home/development/Desktop/wazuhRND/build/CMakeFiles/edit_cache.dir
+/home/development/Desktop/wazuhRND/build/CMakeFiles/rebuild_cache.dir

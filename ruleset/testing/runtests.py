@@ -17,7 +17,10 @@ import shutil
 import argparse
 import re
 import signal
+<<<<<<< HEAD
 # from configparser import ConfigParser # add for hte local test
+=======
+>>>>>>> v4.7.5
 
 from coverage import get_rule_ids
 from coverage import get_parent_decoder_names

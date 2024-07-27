@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Python
 *.pyc
 *.egg-info
@@ -12,3 +13,19 @@ build/
 
 # Projects
 .idea
+=======
+# Python
+*.pyc
+*.egg-info
+*.egg
+
+# Tests
+.env/configurations/tmp/*
+
+# Framework
+dist/
+build/
+
+# Projects
+.idea
+>>>>>>> v4.7.5

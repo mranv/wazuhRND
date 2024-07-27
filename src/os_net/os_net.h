@@ -17,7 +17,11 @@
 
 #define IPV6_LINK_LOCAL_PREFIX "FE80:0000:0000:0000:"
 
+<<<<<<< HEAD
 #define WAZUH_IPC_TIMEOUT 600 // seconds
+=======
+#define WAZUH_IPC_TIMEOUT 600    // seconds
+>>>>>>> v4.7.5
 
 /* OS_Bindport*
  * Bind a specific port (protocol and a ip).
@@ -118,13 +122,21 @@ int OS_SetSendTimeout(int socket, int seconds);
  * @retval 0 on success.
  * @retval OS_SOCKTERR on error.
  */
+<<<<<<< HEAD
 int OS_SendSecureTCP(int sock, uint32_t size, const void *msg);
+=======
+int OS_SendSecureTCP(int sock, uint32_t size, const void * msg);
+>>>>>>> v4.7.5
 
 /* Receive secure TCP message
  * This function reads a header containing message size as 4-byte little-endian unsigned integer.
  * Return recvval on success or OS_SOCKTERR on error.
  */
+<<<<<<< HEAD
 int OS_RecvSecureTCP(int sock, char *ret, uint32_t size);
+=======
+int OS_RecvSecureTCP(int sock, char * ret,uint32_t size);
+>>>>>>> v4.7.5
 
 /**
  * @brief Send secure TCP Cluster message
@@ -135,7 +147,11 @@ int OS_RecvSecureTCP(int sock, char *ret, uint32_t size);
  * @return recvval on success
  * @return OS_SOCKTERR on error
  * */
+<<<<<<< HEAD
 int OS_SendSecureTCPCluster(int sock, const void *command, const void *payload, size_t length);
+=======
+int OS_SendSecureTCPCluster(int sock, const void * command, const void * payload, size_t length);
+>>>>>>> v4.7.5
 
 /**
  * @brief Receive secure TCP Cluster message
@@ -146,7 +162,11 @@ int OS_SendSecureTCPCluster(int sock, const void *command, const void *payload, 
  * @return -1 on socket errors
  * @return -2 on cluster errors
  * */
+<<<<<<< HEAD
 int OS_RecvSecureClusterTCP(int sock, char *ret, size_t length);
+=======
+int OS_RecvSecureClusterTCP(int sock, char* ret, size_t length);
+>>>>>>> v4.7.5
 
 /* Byte ordering */
 uint32_t wnet_order(uint32_t value);
@@ -159,7 +179,11 @@ int OS_SetSocketSize(int sock, int mode, int max_msg_size);
  * Returns -1 on socket error.
  * Returns 0 on socket disconnected or timeout.
  */
+<<<<<<< HEAD
 ssize_t os_recv_waitall(int sock, void *buf, size_t size);
+=======
+ssize_t os_recv_waitall(int sock, void * buf, size_t size);
+>>>>>>> v4.7.5
 
 // Wrapper for select()
 int wnet_select(int sock, int timeout);
@@ -221,4 +245,8 @@ int get_ipv4_string(struct in_addr addr, char *address, size_t address_size);
  * */
 int get_ipv6_string(struct in6_addr addr6, char *address, size_t address_size);
 
+<<<<<<< HEAD
 #endif /* OS_NET_H */
+=======
+#endif /* OS_NET_H */
+>>>>>>> v4.7.5

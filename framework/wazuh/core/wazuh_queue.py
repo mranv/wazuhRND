@@ -9,6 +9,7 @@ from typing import Any
 from wazuh.core.common import origin_module
 from wazuh.core.exception import WazuhError, WazuhInternalError
 from wazuh.core.wazuh_socket import create_wazuh_socket_message
+<<<<<<< HEAD
 from wazuh.core.custom_logger import custom_logger
 
 
@@ -18,6 +19,11 @@ def create_wazuh_queue_socket_msg(flag: str, str_agent_id: str, msg: str, is_res
     custom_logger(f"create_wazuh_queue_socket_msg (wazuh_queue)")
     custom_logger(f"flag : {flag}, str_agent_id : {str_agent_id}, msg : {msg}, is_restart : {is_restart}")
     
+=======
+
+
+def create_wazuh_queue_socket_msg(flag: str, str_agent_id: str, msg: str, is_restart: bool = False) -> str:
+>>>>>>> v4.7.5
     """Create message that will be sent to the WazuhQueue socket.
 
     Parameters
@@ -37,12 +43,15 @@ def create_wazuh_queue_socket_msg(flag: str, str_agent_id: str, msg: str, is_res
     str
         Message that will be sent to the WazuhQueue socket.
     """
+<<<<<<< HEAD
     
     # logger
     ret_msg = f"(msg_to_agent) [] {flag} {str_agent_id} {msg}" if not is_restart else \
         f"(msg_to_agent) [] {flag} {str_agent_id} {msg} - null (from_the_server) (no_rule_id)"
     custom_logger(f"create_wazuh_queue_socket_msg (wazuh_queue) return : {ret_msg} ")
     
+=======
+>>>>>>> v4.7.5
     return f"(msg_to_agent) [] {flag} {str_agent_id} {msg}" if not is_restart else \
         f"(msg_to_agent) [] {flag} {str_agent_id} {msg} - null (from_the_server) (no_rule_id)"
 
@@ -57,7 +66,10 @@ class BaseQueue:
         self._connect()
 
     def _connect(self):
+<<<<<<< HEAD
         custom_logger(f"_connect (wazuh_queue class Base Queue) socet self.ath {self.path}")
+=======
+>>>>>>> v4.7.5
         try:
             self.socket = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
             self.socket.connect(self.path)
@@ -65,17 +77,23 @@ class BaseQueue:
             if length_send_buffer < WazuhQueue.MAX_MSG_SIZE:
                 self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, WazuhQueue.MAX_MSG_SIZE)
         except Exception:
+<<<<<<< HEAD
             
             # logger
             custom_logger(f"if not connet to the socket : {WazuhInternalError(1010, self.path)}")
             
+=======
+>>>>>>> v4.7.5
             raise WazuhInternalError(1010, self.path)
 
     def __enter__(self):
         return self
 
     def _send(self, msg: bytes) -> None:
+<<<<<<< HEAD
         
+=======
+>>>>>>> v4.7.5
         """Send a message through a socket.
 
         Parameters
@@ -89,6 +107,7 @@ class BaseQueue:
             If there was an error communicating with queue.
         """
         try:
+<<<<<<< HEAD
             # logger
             custom_logger(f"_send (WazuhQueue) class Base Queue")
             sent = self.socket.send(msg)
@@ -112,6 +131,16 @@ class BaseQueue:
         # logger
         custom_logger(f"close the connetion of socket (wazuh Queue) class BaseQueue")
         
+=======
+            sent = self.socket.send(msg)
+
+            if sent == 0:
+                raise WazuhInternalError(1011, self.path)
+        except socket.error:
+            raise WazuhInternalError(1011, self.path)
+
+    def close(self):
+>>>>>>> v4.7.5
         self.socket.close()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -136,11 +165,14 @@ class WazuhQueue(BaseQueue):
     AR_TYPE = "ar-message"
 
     def send_msg_to_agent(self, msg: str = '', agent_id: str = '', msg_type: str = '') -> str:
+<<<<<<< HEAD
         
         # logger
         custom_logger(f"send_msg_to_agent (wazuh_queue)")
         custom_logger(f"msg : {msg}, agent_id : {agent_id}, msg_type : {msg_type}")
         
+=======
+>>>>>>> v4.7.5
         """Send message to agent.
 
         Active-response
@@ -181,6 +213,7 @@ class WazuhQueue(BaseQueue):
         """
         # Variables to check if msg is a non active-response message or a restart message
         msg_is_no_ar = msg in [WazuhQueue.HC_SK_RESTART, WazuhQueue.HC_FORCE_RECONNECT]
+<<<<<<< HEAD
         
         # logger 
         custom_logger(f"Variables to check if msg is a non active-response message or a restart message : {msg_is_no_ar} ")
@@ -189,6 +222,9 @@ class WazuhQueue(BaseQueue):
         
         # logger 
         custom_logger(f"Variables to check if msg is a non active-response message or a restart message : {msg_is_restart} ")
+=======
+        msg_is_restart = msg in [WazuhQueue.RESTART_AGENTS, WazuhQueue.RESTART_AGENTS_JSON]
+>>>>>>> v4.7.5
 
         # Create flag and string used to specify the agent ID
         if agent_id:
@@ -209,10 +245,13 @@ class WazuhQueue(BaseQueue):
         else:
             # If msg is not a non active-response command and not a restart command, raises WazuhInternalError
             if not msg_is_no_ar and not msg_is_restart:
+<<<<<<< HEAD
                 
                 # logger
                 custom_logger(f"msg_is_no_ar : {WazuhInternalError(1012, msg)} ")
                 
+=======
+>>>>>>> v4.7.5
                 raise WazuhInternalError(1012, msg)
             socket_msg = create_wazuh_queue_socket_msg(flag, str_agent_id, msg, is_restart=msg_is_restart)
             # Return message
@@ -225,6 +264,7 @@ class WazuhQueue(BaseQueue):
 
         try:
             # Send message
+<<<<<<< HEAD
             custom_logger(f"send the msg throu the socket msg : {socket_msg}")
             self._send(socket_msg.encode())
         except:
@@ -234,6 +274,12 @@ class WazuhQueue(BaseQueue):
         # logger
         custom_logger(f"send_msg_to_agent (wazuh_queue) return ret_msg : {ret_msg}")
         
+=======
+            self._send(socket_msg.encode())
+        except:
+            raise WazuhError(1014, extra_message=f": WazuhQueue socket with path {self.path}")
+
+>>>>>>> v4.7.5
         return ret_msg
 
 

@@ -8,6 +8,7 @@ from wazuh.core.exception import WazuhException, WazuhError, WazuhResourceNotFou
 from wazuh.core.wazuh_queue import WazuhQueue
 from wazuh.core.results import AffectedItemsWazuhResult
 from wazuh.rbac.decorators import expose_resources
+<<<<<<< HEAD
 from wazuh.core.custom_logger import custom_logger #,custom_logger_loop
 # import asyncio
 
@@ -73,16 +74,21 @@ from wazuh.core.custom_logger import custom_logger #,custom_logger_loop
 #     return result
 
 
+=======
+>>>>>>> v4.7.5
 
 
 @expose_resources(actions=['active-response:command'], resources=['agent:id:{agent_list}'],
                   post_proc_kwargs={'exclude_codes': [1701, 1703]})
 def run_command(agent_list: list = None, command: str = '', arguments: list = None, custom: bool = False,
                 alert: dict = None) -> AffectedItemsWazuhResult:
+<<<<<<< HEAD
     
     # logger
     custom_logger(f"run_command (active_response wazuh)")
     custom_logger(f"agent_list : {agent_list}, command : {command}, arguments : {arguments}, custom : {custom}")
+=======
+>>>>>>> v4.7.5
     """Run AR command in a specific agent.
 
     Parameters
@@ -114,15 +120,21 @@ def run_command(agent_list: list = None, command: str = '', arguments: list = No
             for agent_id in agent_list:
                 try:
                     if agent_id not in system_agents:
+<<<<<<< HEAD
                         custom_logger(f"if agent id not in the system_agents : {WazuhResourceNotFound(1701)}")
                         raise WazuhResourceNotFound(1701)
                     if agent_id == "000":
                         custom_logger(f"if the agent is the Manager (000) : {WazuhError(1703)}")
+=======
+                        raise WazuhResourceNotFound(1701)
+                    if agent_id == "000":
+>>>>>>> v4.7.5
                         raise WazuhError(1703)
                     active_response.send_ar_message(agent_id, wq, command, arguments, custom, alert)
                     result.affected_items.append(agent_id)
                     result.total_affected_items += 1
                 except WazuhException as e:
+<<<<<<< HEAD
                     custom_logger(f"send the AR message agent id : {agent_id}, Error : {e}")
                     result.add_failed_item(id_=agent_id, error=e)
             result.affected_items.sort(key=int)
@@ -131,3 +143,9 @@ def run_command(agent_list: list = None, command: str = '', arguments: list = No
     custom_logger(f"run_command (active_response wazuh) return result : {result}")
 
     return result
+=======
+                    result.add_failed_item(id_=agent_id, error=e)
+            result.affected_items.sort(key=int)
+
+    return result
+>>>>>>> v4.7.5
