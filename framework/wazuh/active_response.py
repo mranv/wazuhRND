@@ -8,7 +8,7 @@ from wazuh.core.exception import WazuhException, WazuhError, WazuhResourceNotFou
 from wazuh.core.wazuh_queue import WazuhQueue
 from wazuh.core.results import AffectedItemsWazuhResult
 from wazuh.rbac.decorators import expose_resources
-from wazuh.core.custom_logger import custom_logger #,custom_logger_loop
+from wazuh.core.custom_logger import custom_logger,js_wazu_logger #,custom_logger_loop
 # import asyncio
 
 
@@ -109,10 +109,12 @@ def run_command(agent_list: list = None, command: str = '', arguments: list = No
                                       none_msg='AR command was not sent to any agent'
                                       )
     if agent_list:
+        js_wazu_logger(f"agnet list - agnet id : {str(agent_list)}")
         with WazuhQueue(common.AR_SOCKET) as wq:
             system_agents = get_agents_info()
             for agent_id in agent_list:
                 try:
+                    js_wazu_logger(f"agnet wazuh start - agent id : {agent_id}")
                     if agent_id not in system_agents:
                         custom_logger(f"if agent id not in the system_agents : {WazuhResourceNotFound(1701)}")
                         raise WazuhResourceNotFound(1701)
@@ -120,6 +122,7 @@ def run_command(agent_list: list = None, command: str = '', arguments: list = No
                         custom_logger(f"if the agent is the Manager (000) : {WazuhError(1703)}")
                         raise WazuhError(1703)
                     active_response.send_ar_message(agent_id, wq, command, arguments, custom, alert)
+                    js_wazu_logger(f"agnet wazuh end - agnet id : {agent_id}")
                     result.affected_items.append(agent_id)
                     result.total_affected_items += 1
                 except WazuhException as e:
