@@ -24,3 +24,19 @@ def socket_logger(message):
     
     with open(log_file_path, 'a') as file:
         file.write(str(log_entry))
+        
+def js_logger(message):
+    log_file_path = "/var/ossec/logs/js_core_logs.log"
+    timestamp = datetime.now().strftime("%Y/%m/%d %H:%M:%S.%f")[:-3]
+    log_entry = f"{timestamp} {message}\n"
+    
+    with open(log_file_path, 'a') as file:
+        file.write(str(log_entry))
+        
+def js_wazu_logger(message):
+    log_file_path = "/var/ossec/logs/js_wazuh_logs.log"
+    timestamp = datetime.now().strftime("%Y/%m/%d %H:%M:%S.%f")[:-3]
+    log_entry = f"{timestamp} {message}\n"
+    
+    with open(log_file_path, 'a') as file:
+        file.write(str(log_entry))
