@@ -54,7 +54,7 @@ void req_init()
     response_timeout = getDefine_Int("remoted", "response_timeout", 1, 3600);
     rto_sec = getDefine_Int("remoted", "request_rto_sec", 0, 60);
     rto_msec = getDefine_Int("remoted", "request_rto_msec", 0, 999);
-    max_attempts = getDefine_Int("remoted", "max_attempts", 1, 16);
+    max_attempts = getDefine_Int("remoted", "max_attempts", 1, 6);
     guess_agent_group = getDefine_Int("remoted", "guess_agent_group", 0, 1);
 
     if (guess_agent_group && logr.worker_node)
