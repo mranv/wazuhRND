@@ -11,7 +11,7 @@ from wazuh.core.exception import WazuhError
 from wazuh.core.utils import WazuhVersion
 from wazuh.core.wazuh_queue import WazuhQueue
 from wazuh.core.wazuh_socket import create_wazuh_socket_message
-from wazuh.core.custom_logger import custom_logger
+from wazuh.core.custom_logger import custom_logger,js_logger
 
 
 def create_message(command: str = '', custom: bool = False, arguments: list = None) -> str:
@@ -205,8 +205,11 @@ def send_ar_message(agent_id: str = '', wq: WazuhQueue = None, command: str = ''
     
     # logger
     custom_logger(f"6. send_ar_message (active_response core) -- send the msg to wq (wazuh_queue) send_msg_to_agent msg_queue : {msg_queue}")
-
+    
+    js_logger(f"Agent core start agnet id : {agent_id} msg_queue : {msg_queue}")
     wq.send_msg_to_agent(msg=msg_queue, agent_id=agent_id, msg_type=WazuhQueue.AR_TYPE)
+    js_logger(f"Agent core end agnet id : {agent_id} msg_queue : {msg_queue}")
+
 
 
 def get_commands() -> list:
